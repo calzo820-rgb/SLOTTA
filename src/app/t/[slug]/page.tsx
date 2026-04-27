@@ -1,171 +1,67 @@
-// app/t/[slug]/page.tsx
-// SERVER COMPONENT (nessun "use client" qui)
+import { createClient } from '@supabase/supabase-js'
+import ServiceBookingPageClient from '@/components/ServiceBookingPageClient'
 
-import ProductRow from '@/components/ProductRow'
-import CartPanel from '@/components/CartPanel'
-import { supabase } from '@/lib/supabaseClient'
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-type Tenant = {
+type Service = {
   id: string
   name: string
-  slug: string
-  primary_color?: string | null
-  logo_url?: string | null
-}
-
-type ProductRowDB = {
-  id: string
-  tenant_id: string
-  name: string
-  ingredients: string | null
-  description: string | null
+  description?: string | null
+  duration_minutes: number
   price_cents: number
-  position: number
-  is_active: boolean
-  image_url: string | null
-}
-
-type AddonDB = {
-  id: string | number
-  tenant_id: string
-  name: string
-  price_cents: number | null
+  image_url?: string | null
   is_active?: boolean | null
-  position?: number | null
 }
 
-/** Utility: trasforma "Pomodoro | Mozzarella | Basilico" -> ["Pomodoro","Mozzarella","Basilico"] */
-function splitIngredients(s: string | null | undefined): string[] {
-  if (!s) return []
-  return s
-    .split(/[|,]/g)
-    .map(x => x.trim())
-    .filter(Boolean)
-}
-
-const DEFAULT_COLOR = '#8b0000'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function TenantHome({
   params,
 }: {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }) {
-  const slug = params.slug
+  const { slug } = await params
 
-  // ===== TENANT =====
-  const { data: tenant, error: tErr } = await supabase
+  const { data: tenants, error: tErr } = await supabase
     .from('tenants')
-    .select('id,name,slug,primary_color,logo_url')
+    .select('id, name, logo_url, primary_color, slug, address')
     .eq('slug', slug)
-    .single<Tenant>()
+    .limit(1)
 
-  if (tErr || !tenant) {
-    return (
-      <main className="max-w-6xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-2">Locale non trovato</h1>
-        <p className="text-zinc-600">Verifica lo slug nel link.</p>
-      </main>
-    )
+  if (tErr) {
+    return <main className="p-6">Errore: {tErr.message}</main>
   }
 
-  const themeColor = tenant.primary_color || DEFAULT_COLOR
+  const tenant = tenants?.[0]
+  if (!tenant) return <main className="p-6">Locale non trovato.</main>
 
-  // ===== PRODUCTS (solo attivi) =====
-  const { data: productsDB, error: pErr } = await supabase
-    .from('products')
-    .select(
-      'id,tenant_id,name,ingredients,description,price_cents,position,is_active,image_url'
-    )
+  const { data: svcRows, error: sErr } = await supabase
+    .from('services')
+    .select('id, name, description, duration_minutes, price_cents, image_url, is_active')
     .eq('tenant_id', tenant.id)
-    .eq('is_active', true)
-    .order('position', { ascending: true })
+    .order('name', { ascending: true })
 
-  if (pErr) {
-    return (
-      <main className="max-w-6xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-2" style={{ color: themeColor }}>
-          {tenant.name}
-        </h1>
-        <p className="text-red-600">
-          Errore caricamento prodotti: {pErr.message}
-        </p>
-      </main>
-    )
+  if (sErr) {
+    return <main className="p-6">Errore servizi: {sErr.message}</main>
   }
 
-  const products = (productsDB || []).map((p: ProductRowDB) => ({
-    id: p.id,
-    name: p.name,
-    price_cents: p.price_cents,
-    image_url: p.image_url,
-    ingredients: splitIngredients(p.ingredients),
-  }))
+  const services = (svcRows || []).filter((s: any) => s.is_active !== false)
 
-  // ===== ADDONS & CATALOGO INGREDIENTI (da tenant_addons) =====
-  let addons:
-    { id: string | number; name: string; price_cents?: number }[] = []
-  let ingredientCatalog: string[] = []
-
-  {
-    const { data: addDB, error: aErr } = await supabase
-      .from('tenant_addons')
-      .select('id,name,price_cents,is_active,position')
-      .eq('tenant_id', tenant.id)
-      .eq('is_active', true)
-      .order('position', { ascending: true })
-
-    if (!aErr && addDB) {
-      addons = (addDB as AddonDB[]).map(a => ({
-        id: a.id,
-        name: a.name,
-        price_cents: a.price_cents || 0,
-      }))
-
-      ingredientCatalog = (addDB as AddonDB[])
-        .map(a => a.name)
-        .filter(Boolean)
-    }
-  }
-
-  // ===== RENDER =====
-  return (
-    <main className="max-w-6xl mx-auto p-4 md:p-6">
-      <header className="mb-4 flex items-center gap-3">
-        {tenant.logo_url && (
-          <img
-            src={tenant.logo_url}
-            alt={tenant.name}
-            className="h-8 w-8 object-contain rounded"
-          />
-        )}
-        <h1 className="text-2xl font-bold" style={{ color: themeColor }}>
-          {tenant.name}
-        </h1>
-      </header>
-
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Prodotti */}
-        <section className="md:col-span-2 grid gap-4">
-          {products.length === 0 && (
-            <div className="text-sm text-zinc-600">
-              Nessun prodotto disponibile al momento.
-            </div>
-          )}
-
-          {products.map(p => (
-            <ProductRow
-              key={p.id}
-              p={p}
-              addons={addons}
-              ingredientCatalog={ingredientCatalog}
-              color={themeColor}
-            />
-          ))}
-        </section>
-
-        {/* Carrello + Fasce orarie */}
-        <CartPanel tenantSlug={slug} color={themeColor} />
-      </div>
-    </main>
-  )
+ return (
+  <ServiceBookingPageClient
+    tenant={{
+      id: tenant.id,
+      name: tenant.name,
+      slug: tenant.slug,
+      logo_url: tenant.logo_url,
+      primary_color: tenant.primary_color,
+      address: tenant.address,
+    }}
+    services={services as Service[]}
+  />
+)
 }

@@ -1,15 +1,15 @@
 import { redirect } from 'next/navigation'
 import { getMyMembership, requireOwner } from '@/lib/authz'
-import HoursClient from './hours-client'
+import ServiceCalendarClient from './ServiceCalendarClient'
 
 export default async function Page() {
   const mem = await getMyMembership()
 
   if (!mem) {
-    redirect('/login?next=/admin/hours')
+    redirect('/login?next=/admin/service-calendar')
   }
 
   requireOwner(mem)
 
-  return <HoursClient tenantId={mem.tenant_id} />
+  return <ServiceCalendarClient tenantId={mem.tenant_id} />
 }

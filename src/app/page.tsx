@@ -1,103 +1,191 @@
-import Image from "next/image";
+import Link from 'next/link'
 
-export default function Home() {
+export default function HomePage() {
+  const green = 'bg-emerald-600 hover:bg-emerald-700'
+  const greenText = 'text-emerald-700'
+  const greenRing = 'focus-visible:ring-emerald-500'
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="min-h-screen bg-zinc-50 text-zinc-900">
+      {/* HEADER */}
+      <header className="border-b bg-white">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="font-bold text-lg tracking-tight">PrenotaOra</div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/login?next=/admin"
+              className={[
+                'px-4 py-2 rounded-xl border bg-white text-sm',
+                'hover:bg-zinc-50',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                greenRing,
+              ].join(' ')}
+            >
+              Accedi
+            </Link>
+
+            <Link
+              href="/onboarding/salon"
+              className={[
+                'px-4 py-2 rounded-xl text-white text-sm',
+                green,
+                'shadow-sm',
+                'transition-all duration-200 ease-out',
+                'hover:-translate-y-[1px] hover:shadow-md',
+                'active:translate-y-0 active:shadow-sm',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                greenRing,
+              ].join(' ')}
+            >
+              Crea il tuo salone
+            </Link>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </header>
+
+      {/* HERO */}
+      <section className="max-w-6xl mx-auto px-6 py-14 grid md:grid-cols-2 gap-10 items-center">
+        <div className="grid gap-4">
+          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
+            Prenotazioni online per saloni, senza complicazioni.
+          </h1>
+
+          <p className="text-zinc-600 text-lg">
+            Pagina prenotazioni pubblica, gestione servizi e calendario, pagamenti online o in salone.
+            Tutto in un’unica dashboard.
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {/* CTA primaria unica */}
+            <Link
+              href="/onboarding/salon"
+              className={[
+                'px-5 py-3 rounded-xl text-white',
+                green,
+                'shadow-sm',
+                'transition-all duration-200 ease-out',
+                'hover:-translate-y-[1px] hover:shadow-md',
+                'active:translate-y-0 active:shadow-sm',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                greenRing,
+              ].join(' ')}
+            >
+              Crea il tuo salone
+            </Link>
+
+            {/* CTA secondaria */}
+            <Link
+              href="/login?next=/admin"
+              className={[
+                'px-5 py-3 rounded-xl border bg-white',
+                'hover:bg-zinc-50',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                greenRing,
+              ].join(' ')}
+            >
+              Accedi
+            </Link>
+          </div>
+
+          <div className="text-xs text-zinc-500">
+            Setup in pochi minuti. Poi configuri servizi e orari dalla tua area admin.
+          </div>
+        </div>
+
+        {/* BOX "Cosa ottieni" */}
+        <div className="bg-white border rounded-2xl p-6 shadow-sm">
+          <div className="text-sm font-semibold mb-3">Cosa ottieni</div>
+          <ul className="grid gap-2 text-sm text-zinc-700">
+            <li className="flex items-start gap-2">
+              <span className={greenText}>✅</span>
+              <span>Pagina prenotazione per i clienti</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className={greenText}>✅</span>
+              <span>Servizi con immagini e prezzi</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className={greenText}>✅</span>
+              <span>Calendario + disponibilità per giorno</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className={greenText}>✅</span>
+              <span>Pagamento: online / in salone / scelta cliente</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className={greenText}>✅</span>
+              <span>Email automatiche di conferma/cancellazione</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section className="max-w-6xl mx-auto px-6 pb-14 grid gap-6">
+        <div className="grid md:grid-cols-3 gap-4">
+          {[
+            { title: 'Servizi', desc: 'Crea servizi, durata e prezzo. Immagini incluse.' },
+            { title: 'Orari & capacità', desc: 'Imposta orari per giorno e quante persone puoi gestire.' },
+            { title: 'Pagamenti', desc: 'Online, in salone oppure decide il cliente.' },
+          ].map(f => (
+            <div
+              key={f.title}
+              className={[
+                'bg-white border rounded-2xl p-5 shadow-sm',
+                'hover:shadow-md hover:-translate-y-[1px] transition-all duration-200 ease-out',
+              ].join(' ')}
+            >
+              <div className="font-semibold flex items-center gap-2">
+                <span className={greenText}>●</span>
+                {f.title}
+              </div>
+              <div className="text-sm text-zinc-600 mt-2">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* PRICING */}
+      <section className="max-w-6xl mx-auto px-6 pb-14">
+        <div className="bg-white border rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="text-sm text-zinc-500">Prezzo</div>
+            <div className="text-2xl font-bold">€30/mese</div>
+            <div className="text-sm text-zinc-600 mt-1">
+              Tutto incluso. SMS reminder opzionali <span className="font-medium">+€10/mese</span>.
+            </div>
+          </div>
+
+          <Link
+            href="/onboarding/salon"
+            className={[
+              'px-5 py-3 rounded-xl text-white w-fit',
+              green,
+              'shadow-sm',
+              'transition-all duration-200 ease-out',
+              'hover:-translate-y-[1px] hover:shadow-md',
+              'active:translate-y-0 active:shadow-sm',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+              greenRing,
+            ].join(' ')}
+          >
+            Crea il tuo salone
+          </Link>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t bg-white">
+        <div className="max-w-6xl mx-auto px-6 py-8 text-sm text-zinc-500 flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
+          <div>© {new Date().getFullYear()} PrenotaOra</div>
+          <div className="flex gap-4">
+            <span className="hover:text-zinc-700 cursor-pointer">Privacy</span>
+            <span className="hover:text-zinc-700 cursor-pointer">Termini</span>
+            <span className="hover:text-zinc-700 cursor-pointer">Contatti</span>
+          </div>
+        </div>
       </footer>
-    </div>
-  );
+    </main>
+  )
 }
