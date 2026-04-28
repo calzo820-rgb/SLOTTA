@@ -167,12 +167,12 @@ async function detectBlockedSchema(tenantId: string) {
   return { table: TABLE, dayCol, timeCol }
 }
 
-export default function ServiceBookingPage({
+export default async function ServiceBookingPage({
   params,
 }: {
-  params: { slug: string; serviceId: string }
+  params: Promise<{ slug: string; serviceId: string }>
 }) {
-  const { slug, serviceId } = params
+  const { slug, serviceId } = await params
 
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [service, setService] = useState<Service | null>(null)

@@ -18,14 +18,15 @@ export async function POST(req: Request) {
 
 
   // evita auto-delete owner
-  const { data: authData } = await sb.auth.getUser()
+  const supabase = await sb()
+const { data: authData } = await supabase.auth.getUser()
   const me = authData?.user
   if (me?.id === targetUserId) {
     return NextResponse.json({ error: 'Non puoi rimuovere te stesso.' }, { status: 400 })
   }
 
   // verifica stesso tenant
-  const { data: tu, error: tuErr } = await sb
+  const { data: tu, error: tuErr } = await supabase
     .from('tenant_users')
     .select('tenant_id')
     .eq('user_id', targetUserId) // ✅ user_id
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
   }
 
   // 1) cancella membership
-  const { error: delMapErr } = await sb.from('tenant_users').delete().eq('user_id', targetUserId)
+  const { error: delMapErr } = await supabase.from('tenant_users').delete().eq('user_id', targetUserId)
   if (delMapErr) return NextResponse.json({ error: delMapErr.message }, { status: 400 })
 
   // 2) cancella user auth (service role)

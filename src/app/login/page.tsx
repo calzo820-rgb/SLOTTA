@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { normalizeUsername, usernameToEmail } from '@/lib/usernames'
 
-
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const sp = useSearchParams()
 
@@ -17,7 +16,6 @@ export default function LoginPage() {
 
   const next = sp.get('next') || '/admin'
 
-  // ✅ se sei già loggato, NON devi rifare login
   useEffect(() => {
     ;(async () => {
       const { data } = await supabase.auth.getSession()
@@ -26,8 +24,7 @@ export default function LoginPage() {
         router.refresh()
       }
     })()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [next, router])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,20 +33,18 @@ export default function LoginPage() {
 
     try {
       const input = normalizeUsername(userOrEmail)
-
-      // se contiene "@", lo tratto come email reale
       const email = input.includes('@') ? input : usernameToEmail(input)
 
       const { data: authData, error } = await supabase.auth.signInWithPassword({
-  email,
-  password,
-})
+        email,
+        password,
+      })
 
-if (error) throw error
-if (!authData.session) throw new Error('Sessione non creata.')
+      if (error) throw error
+      if (!authData.session) throw new Error('Sessione non creata.')
 
-router.replace(next)
-router.refresh()
+      router.replace(next)
+      router.refresh()
     } catch (e: any) {
       setErr(e?.message || 'Errore login')
       setLoading(false)
@@ -107,5 +102,13 @@ router.refresh()
         </button>
       </form>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   )
 }

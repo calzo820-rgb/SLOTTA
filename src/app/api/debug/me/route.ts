@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/authz'
 
 export async function GET() {
-  const sb = supabaseServer
+const sb = await supabaseServer()
 
-  const { data: u } = await sb.auth.getUser()
+const { data: u } = await sb.auth.getUser()
 
   const user = u?.user
   if (!user) return NextResponse.json({ user: null })
