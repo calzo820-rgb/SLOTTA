@@ -1,0 +1,31 @@
+{
+  "name": "Slotta",
+  "short_name": "Slotta",
+  "description": "Prenotazioni smart per attività e professionisti.",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0F1D2D",
+  "theme_color": "#0F1D2D",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
