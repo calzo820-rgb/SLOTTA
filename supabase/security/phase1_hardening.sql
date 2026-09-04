@@ -43,6 +43,22 @@ grant execute on function public.is_tenant_owner(uuid) to authenticated, service
 grant execute on function public.my_tenant_id() to authenticated, service_role;
 grant execute on function public.my_role() to authenticated, service_role;
 
+-- Keep the public booking catalogue independent from authenticated helper
+-- functions. Anonymous visitors see active services only; authenticated tenant
+-- users can additionally see their own inactive services in the admin area.
+drop policy if exists services_public_read_active on public.services;
+drop policy if exists services_authenticated_read on public.services;
+create policy services_public_read_active
+  on public.services
+  for select
+  to anon
+  using (is_active = true);
+create policy services_authenticated_read
+  on public.services
+  for select
+  to authenticated
+  using (is_active = true or tenant_id = public.my_tenant_id());
+
 -- Remove only byte-for-byte duplicate indexes reported by Database Advisor.
 drop index if exists public.idx_blocked_time_slots_tenant_day;
 drop index if exists public.idx_orders_type;
