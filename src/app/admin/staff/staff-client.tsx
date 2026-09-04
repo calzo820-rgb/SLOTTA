@@ -567,6 +567,37 @@ async function deleteStaffAccess(access: StaffAccess) {
   onToggle={() => toggleMobileSection('addStaff')}
 />
 
+<div
+  className={[
+    'border-b border-slate-100 px-5 py-5',
+    mobileSections.addStaff ? 'block' : 'hidden md:block',
+  ].join(' ')}
+>
+  <div className="flex flex-col gap-3 sm:flex-row">
+    <label className="flex-1">
+      <span className="sr-only">Nome operatore</span>
+      <input
+        type="text"
+        value={name}
+        onChange={event => setName(event.target.value)}
+        onKeyDown={event => {
+          if (event.key === 'Enter' && !saving) void addStaff()
+        }}
+        placeholder="Nome operatore"
+        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-[#0F1D2D] outline-none transition focus:border-[#1FA7A6] focus:ring-4 focus:ring-[#1FA7A6]/10"
+      />
+    </label>
+    <button
+      type="button"
+      onClick={() => void addStaff()}
+      disabled={saving}
+      className="h-12 rounded-2xl bg-[#1FA7A6] px-5 text-sm font-black text-white shadow-sm transition hover:bg-[#178C8B] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {saving ? 'Salvataggio…' : 'Aggiungi operatore'}
+    </button>
+  </div>
+</div>
+
   <StaffAccessPanel
   open={mobileSections.accesses}
   staffLoginCode={staffLoginCode}

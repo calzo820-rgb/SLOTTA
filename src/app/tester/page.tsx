@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import TesterLeadClient from './tester-lead-client'
 
 export const metadata = {
@@ -13,9 +14,11 @@ export default function TesterPage() {
       <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
           <Link href="/" className="flex items-center gap-3">
-            <img
+            <Image
               src="/icon-192.png"
               alt="Slotta"
+              width={44}
+              height={44}
               className="h-11 w-11 rounded-2xl border border-slate-200 bg-white object-contain shadow-sm"
             />
             <div className="leading-tight">

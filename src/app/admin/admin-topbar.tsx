@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import UserMenu from '@/components/UserMenu'
 
@@ -42,7 +43,7 @@ const tabs =
 
   const activeTab = tabs.find(tab => isActive(pathname, tab.href))
 
-async function loadPendingCount() {
+const loadPendingCount = useCallback(async () => {
   if (!tenantId) return
 
   const { count, error } = await supabase
@@ -59,12 +60,12 @@ async function loadPendingCount() {
   }
 
   setPendingCount(count ?? 0)
-}
+}, [tenantId])
 
   useEffect(() => {
     if (!tenantId) return
     loadPendingCount()
-  }, [tenantId])
+  }, [tenantId, loadPendingCount])
 
   useEffect(() => {
     if (!tenantId) return
@@ -88,7 +89,7 @@ async function loadPendingCount() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [tenantId])
+  }, [tenantId, loadPendingCount])
 
  return (
   <header className="sticky top-0 z-40 border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] via-white to-[#F8FAFC] backdrop-blur-xl md:border-slate-200 md:bg-white/90 md:bg-none">
@@ -182,9 +183,11 @@ async function loadPendingCount() {
       {/* DESKTOP */}
       <div className="hidden items-center justify-between gap-4 md:flex">
         <div className="flex items-center gap-3">
-          <img
+          <Image
   src="/icon-192.png"
   alt="Slotta"
+  width={44}
+  height={44}
   className="h-11 w-11 rounded-2xl object-contain bg-white shadow-sm border border-slate-200"
 />
 

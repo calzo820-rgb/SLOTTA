@@ -1,0 +1,2 @@
+-- Deliberately empty.
+-- Add synthetic local-development data only; never copy production records here.

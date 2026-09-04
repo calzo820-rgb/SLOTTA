@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { supabase } from '@/lib/supabaseClient'
@@ -524,15 +525,21 @@ async function startStripeConnectOnboarding() {
   <div className="grid gap-4 p-5">
     <div className="flex items-center gap-4">
       {logoFile ? (
-        <img
+        <Image
           src={URL.createObjectURL(logoFile)}
           alt={profile.name}
+          width={64}
+          height={64}
+          unoptimized
           className="h-16 w-16 rounded-2xl border border-slate-200 bg-white object-cover shadow-sm"
         />
       ) : profile.logo_url ? (
-        <img
+        <Image
           src={profile.logo_url}
           alt={profile.name}
+          width={64}
+          height={64}
+          unoptimized
           className="h-16 w-16 rounded-2xl border border-slate-200 bg-white object-cover shadow-sm"
         />
       ) : (

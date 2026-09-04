@@ -40,4 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Generated from the production database; keep local in this public repository.
+/src/types/database.generated.ts
+
 .vercel

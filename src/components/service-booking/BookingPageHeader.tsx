@@ -1,4 +1,5 @@
 import type { TenantInfo } from './types'
+import Image from 'next/image'
 
 type Props = {
   tenant: TenantInfo
@@ -24,9 +25,12 @@ export function BookingPageHeader({
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           {tenant.logo_url ? (
-            <img
+            <Image
               src={tenant.logo_url}
               alt={tenant.name}
+              width={48}
+              height={48}
+              unoptimized
               className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-sm"
             />
           ) : (

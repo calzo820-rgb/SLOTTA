@@ -1,4 +1,5 @@
 import type { Service } from './types'
+import Image from 'next/image'
 
 type Props = {
   currentStep: 1 | 2 | 3
@@ -60,9 +61,12 @@ export function ServiceSelectionStep({
               ].join(' ')}
             >
               {svc.image_url ? (
-                <img
+                <Image
                   src={svc.image_url}
                   alt={svc.name}
+                  width={112}
+                  height={112}
+                  unoptimized
                   className="h-24 w-24 shrink-0 rounded-2xl object-cover md:h-28 md:w-28"
                 />
               ) : null}
