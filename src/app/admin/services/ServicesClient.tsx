@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 import type { ServiceRow, ToastState, ToastType } from './types'
 import {
@@ -466,12 +467,15 @@ async function deleteRow(id: string) {
       </p>
 
       <div className="flex items-start gap-3">
-        <img
+        <Image
           src={
             newImagePreview ||
             'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="100%" height="100%" fill="%23f4f4f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="10">Nessuna immagine</text></svg>'
           }
           alt=""
+          width={80}
+          height={80}
+          unoptimized
           className="h-20 w-20 rounded-2xl border border-slate-200 bg-white object-cover"
         />
 
@@ -543,9 +547,12 @@ async function deleteRow(id: string) {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex min-w-0 items-start gap-4">
                     {s.image_url ? (
-                      <img
+                      <Image
                         src={s.image_url}
                         alt={s.name}
+                        width={96}
+                        height={96}
+                        unoptimized
                         className="h-24 w-24 shrink-0 rounded-3xl border border-slate-200 bg-white object-cover"
                       />
                     ) : (
@@ -763,13 +770,16 @@ async function deleteRow(id: string) {
 
                     <div className="rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4">
                       <div className="flex items-start gap-3">
-                        <img
+                        <Image
                           src={
                             editImagePreview ||
                             editRow.image_url ||
                             'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="100%" height="100%" fill="%23f4f4f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="10">Nessuna immagine</text></svg>'
                           }
                           alt=""
+                          width={80}
+                          height={80}
+                          unoptimized
                           className="h-20 w-20 rounded-2xl border border-slate-200 bg-white object-cover"
                         />
 

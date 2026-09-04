@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import InstallAppButton from '@/components/InstallAppButton'
 
 export default function HomePage() {
@@ -8,9 +9,11 @@ export default function HomePage() {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <Link href="/" className="flex items-center gap-3">
-            <img
+            <Image
               src="/icon-192.png"
               alt="Slotta"
+              width={40}
+              height={40}
               className="h-10 w-10 rounded-2xl border border-slate-200 bg-white object-contain shadow-sm"
             />
 
@@ -98,9 +101,12 @@ export default function HomePage() {
 <div className="relative">
   <div className="absolute inset-0 -z-10 bg-[#1FA7A6]/10 blur-3xl" />
 
-  <img
+  <Image
     src="/landing-mockup.png"
     alt="Anteprima Slotta"
+    width={1536}
+    height={1024}
+    priority
     className="w-full rounded-[2.5rem] border border-slate-200 bg-white shadow-2xl"
   />
 </div>

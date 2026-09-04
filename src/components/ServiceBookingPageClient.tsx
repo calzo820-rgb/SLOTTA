@@ -500,7 +500,14 @@ const bookings: BookedSlotRow[] = Array.isArray(bookedData.bookings)
     return () => {
       cancelled = true
     }
-  }, [tenant.id, date, durationByServiceId, selectedServiceId, selectedStaffId])
+  }, [
+    tenant.id,
+    date,
+    durationByServiceId,
+    onlinePaymentsAvailable,
+    selectedServiceId,
+    selectedStaffId,
+  ])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Staff = {
@@ -59,7 +59,7 @@ const [endTime, setEndTime] = useState('13:00')
     return map
   }, [staff])
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     if (!tenantId) return
 
     setLoading(true)
@@ -93,11 +93,11 @@ const [endTime, setEndTime] = useState('13:00')
 } finally {
       setLoading(false)
     }
-  }
+  }, [tenantId])
 
   useEffect(() => {
     loadData()
-  }, [tenantId])
+  }, [loadData])
 
   async function addClosure() {
     if (!tenantId) return

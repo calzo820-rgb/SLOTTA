@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import type {
   Booking,
@@ -293,7 +293,7 @@ async function toggleNotifications() {
 
   await enableNotifications()
 }
-  async function loadBookingsData(silent = false) {
+  const loadBookingsData = useCallback(async (silent = false) => {
   if (!tenantId) return
 
   if (!silent) {
@@ -383,12 +383,12 @@ setBookingSettings({
     setLoading(false)
   }
 }
-  }
+  }, [tenantId])
 
 useEffect(() => {
   if (!tenantId) return
   loadBookingsData()
-}, [tenantId])
+}, [tenantId, loadBookingsData])
 
   useEffect(() => {
   if (!tenantId) return
@@ -423,7 +423,7 @@ await loadBookingsData(true)
   return () => {
     supabase.removeChannel(channel)
   }
-}, [tenantId])
+}, [tenantId, loadBookingsData])
 
   const filteredBookings = useMemo(() => {
  let list = bookings.filter(b => b.checkout_pending !== true)
