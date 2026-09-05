@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getMyMembership } from '@/lib/authz'
 
+const ALLOWED_STAFF_PAGES = new Set([
+  'services',
+  'bookings',
+  'calendar',
+  'hours',
+  'closures',
+])
+
 function normalizeUsername(u: string) {
   return u.trim().toLowerCase().replace(/\s+/g, '')
 }
@@ -39,7 +47,11 @@ export async function POST(req: Request) {
     const username = normalizeUsername(String(body.username || ''))
     const password = String(body.password || '')
     const allowed_pages = Array.isArray(body.allowed_pages)
-      ? body.allowed_pages.map(String)
+      ? [
+          ...new Set<string>(
+            body.allowed_pages.map((page: unknown) => String(page)),
+          ),
+        ]
       : []
 
     if (!tenant_id) {
@@ -68,6 +80,13 @@ export async function POST(req: Request) {
     if (allowed_pages.length === 0) {
       return NextResponse.json(
         { error: 'Seleziona almeno una pagina accessibile.', step },
+        { status: 400 },
+      )
+    }
+
+    if (allowed_pages.some(page => !ALLOWED_STAFF_PAGES.has(page))) {
+      return NextResponse.json(
+        { error: 'Una o più pagine richieste non sono consentite.', step },
         { status: 400 },
       )
     }
