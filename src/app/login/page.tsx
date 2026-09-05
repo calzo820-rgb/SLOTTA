@@ -189,7 +189,7 @@ router.replace(next)
         </div>
 
         {err ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">
+          <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">
             {err}
           </div>
         ) : null}
@@ -206,6 +206,7 @@ router.replace(next)
               autoCorrect="off"
               placeholder="es. admin@slotta.it"
               type="email"
+              autoComplete="email"
             />
           </label>
         ) : (
@@ -236,6 +237,7 @@ router.replace(next)
                 autoCapitalize="none"
                 autoCorrect="off"
                 placeholder="es. reception"
+                autoComplete="username"
               />
             </label>
           </div>
@@ -249,6 +251,7 @@ router.replace(next)
             onChange={e => setPassword(e.target.value)}
             className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-[#1FA7A6] focus:ring-2 focus:ring-[#1FA7A6]/10"
             required
+            autoComplete="current-password"
           />
         </label>
 
