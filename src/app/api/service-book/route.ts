@@ -3,12 +3,11 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { resend } from '@/lib/resendClient'
 import { sendPushNotificationsToTenant } from '@/lib/sendPushNotifications'
-function timeStrToMinutes(s: string): number {
-  const parts = String(s || '').split(':')
-  const h = parseInt(parts[0] || '0', 10)
-  const m = parseInt(parts[1] || '0', 10)
-  return h * 60 + m
-}
+import {
+  bookingTimeToMinutes,
+  getNowInTimeZone,
+  isValidBookingDate,
+} from '@/lib/bookingRequest'
 function escapeHtml(value: string) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -51,6 +50,10 @@ if (body.payment_mode === 'online') {
     if (!tenant_id || !service_id || !booking_date || !booking_time) {
       return NextResponse.json({ error: 'Dati mancanti.' }, { status: 400 })
     }
+    const bookingMinutes = bookingTimeToMinutes(booking_time)
+    if (!isValidBookingDate(booking_date) || bookingMinutes === null) {
+      return NextResponse.json({ error: 'Data o orario non validi.' }, { status: 400 })
+    }
     if (!customer_name || customer_name.trim().length < 2) {
       return NextResponse.json({ error: 'Nome non valido.' }, { status: 400 })
     }
@@ -77,7 +80,7 @@ if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
     // 1) leggo settings
 const { data: st, error: stErr } = await supabaseAdmin
   .from('tenant_settings')
-  .select('staff_assign_mode, staff_rr_cursor, lead_minutes')
+  .select('staff_assign_mode, staff_rr_cursor, lead_minutes, timezone')
   .eq('tenant_id', tenant_id)
   .maybeSingle()
 
@@ -94,15 +97,9 @@ const leadMinutes =
     : 30
 
 // blocco prenotazioni nel passato o troppo vicine
-const now = new Date()
-const todayStr = [
-  now.getFullYear(),
-  String(now.getMonth() + 1).padStart(2, '0'),
-  String(now.getDate()).padStart(2, '0'),
-].join('-')
-
-const nowMinutes = now.getHours() * 60 + now.getMinutes()
-const bookingMinutes = timeStrToMinutes(booking_time)
+const { date: todayStr, minutes: nowMinutes } = getNowInTimeZone(
+  st?.timezone || 'Europe/Rome',
+)
 
 // data nel passato
 if (booking_date < todayStr) {
@@ -125,10 +122,14 @@ if (booking_date === todayStr && bookingMinutes < nowMinutes + leadMinutes) {
   .select('name, duration_minutes, price_cents')
   .eq('tenant_id', tenant_id)
   .eq('id', service_id)
+  .eq('is_active', true)
   .maybeSingle()
 
     if (svcErr) throw svcErr
-    const duration = Number(svc?.duration_minutes || 60)
+    if (!svc) {
+      return NextResponse.json({ error: 'Servizio non trovato o non attivo.' }, { status: 404 })
+    }
+    const duration = Number(svc.duration_minutes || 60)
 
     // 3) staff attivo
     const { data: staffRows, error: staffErr } = await supabaseAdmin
@@ -176,7 +177,7 @@ if (booking_date === todayStr && bookingMinutes < nowMinutes + leadMinutes) {
     const durMap: Record<string, number> = {}
     ;(svcsDur || []).forEach(s => (durMap[s.id] = Number(s.duration_minutes || 60)))
 
-    const candidateStart = timeStrToMinutes(booking_time)
+    const candidateStart = bookingMinutes
     const candidateEnd = candidateStart + duration
 
     function isStaffFree(staffId: string) {
@@ -186,7 +187,7 @@ if (booking_date === todayStr && bookingMinutes < nowMinutes + leadMinutes) {
       const list = (dayBookings || []).filter(b => b.staff_id === staffId)
 
       for (const b of list) {
-        const start = timeStrToMinutes(String(b.booking_time || '00:00'))
+        const start = bookingTimeToMinutes(String(b.booking_time || '')) ?? 0
         const bDur = durMap[String(b.service_id)] || 60
         const end = start + bDur
 

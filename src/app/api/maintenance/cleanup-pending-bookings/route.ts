@@ -6,15 +6,21 @@ export const dynamic = 'force-dynamic'
 
 async function cleanupExpiredPendingBookings(req: Request) {
   try {
-    const expectedSecret = process.env.CRON_SECRET || 'slotta-cron'
+    const expectedSecret = process.env.CRON_SECRET
+    if (!expectedSecret) {
+      console.error('cleanup-pending-bookings: CRON_SECRET non configurato')
+      return NextResponse.json(
+        { error: 'Configurazione manutenzione non disponibile.' },
+        { status: 503 },
+      )
+    }
 
-const url = new URL(req.url)
-const querySecret = url.searchParams.get('secret')
+    const authHeader = req.headers.get('authorization') || ''
+    const bearerToken = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7).trim()
+      : ''
 
-const authHeader = req.headers.get('authorization')
-const bearerToken = authHeader?.replace('Bearer ', '').trim()
-
-if (querySecret !== expectedSecret && bearerToken !== expectedSecret) {
+if (!bearerToken || bearerToken !== expectedSecret) {
   return NextResponse.json(
     { error: 'Non autorizzato.' },
     { status: 401 },
