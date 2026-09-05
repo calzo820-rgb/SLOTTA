@@ -1,6 +1,7 @@
 // src/app/api/public/booked-slots/route.ts
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { isValidBookingDate } from '@/lib/bookingRequest'
 
 type BusyRow = {
   service_id: string
@@ -32,6 +33,9 @@ export async function POST(req: Request) {
         { error: 'Dati mancanti.' },
         { status: 400 },
       )
+    }
+    if (!isValidBookingDate(booking_date)) {
+      return NextResponse.json({ error: 'Data non valida.' }, { status: 400 })
     }
 
     /**

@@ -2,15 +2,13 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import {
+  bookingTimeToMinutes,
+  getNowInTimeZone,
+  isValidBookingDate,
+} from '@/lib/bookingRequest'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
-
-function timeStrToMinutes(s: string): number {
-  const parts = String(s || '').split(':')
-  const h = parseInt(parts[0] || '0', 10)
-  const m = parseInt(parts[1] || '0', 10)
-  return h * 60 + m
-}
 
 function isSafeLocalUrl(value: string, origin: string) {
   try {
@@ -74,6 +72,10 @@ export async function POST(req: Request) {
 
     if (!tenant_id || !service_id || !booking_date || !booking_time) {
       return NextResponse.json({ error: 'Dati mancanti.' }, { status: 400 })
+    }
+    const bookingMinutes = bookingTimeToMinutes(booking_time)
+    if (!isValidBookingDate(booking_date) || bookingMinutes === null) {
+      return NextResponse.json({ error: 'Data o orario non validi.' }, { status: 400 })
     }
 
     if (!customer_name || customer_name.trim().length < 2) {
@@ -154,7 +156,7 @@ if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email)) {
     // 1. Settings tenant
     const { data: st, error: stErr } = await supabaseAdmin
       .from('tenant_settings')
-      .select('staff_assign_mode, staff_rr_cursor, lead_minutes')
+      .select('staff_assign_mode, staff_rr_cursor, lead_minutes, timezone')
       .eq('tenant_id', tenant_id)
       .maybeSingle()
 
@@ -172,16 +174,9 @@ if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email)) {
         : 30
 
     // 2. Blocca date/orari passati o troppo vicini
-    const now = new Date()
-
-    const todayStr = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0'),
-    ].join('-')
-
-    const nowMinutes = now.getHours() * 60 + now.getMinutes()
-    const bookingMinutes = timeStrToMinutes(booking_time)
+    const { date: todayStr, minutes: nowMinutes } = getNowInTimeZone(
+      st?.timezone || 'Europe/Rome',
+    )
 
     if (booking_date < todayStr) {
       return NextResponse.json(
@@ -203,6 +198,7 @@ if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email)) {
       .select('id, name, duration_minutes, price_cents')
       .eq('tenant_id', tenant_id)
       .eq('id', service_id)
+      .eq('is_active', true)
       .maybeSingle()
 
     if (svcErr) throw svcErr
@@ -320,14 +316,14 @@ try {
       durMap[s.id] = Number(s.duration_minutes || 60)
     })
 
-    const candidateStart = timeStrToMinutes(booking_time)
+    const candidateStart = bookingMinutes
     const candidateEnd = candidateStart + duration
 
     function isStaffFree(staffId: string) {
       const list = allBusyRows.filter(row => row.staff_id === staffId)
 
       for (const row of list) {
-        const start = timeStrToMinutes(String(row.booking_time || '00:00'))
+        const start = bookingTimeToMinutes(String(row.booking_time || '')) ?? 0
         const rowDuration = row.service_id ? durMap[row.service_id] || 60 : 60
         const end = start + rowDuration
 
