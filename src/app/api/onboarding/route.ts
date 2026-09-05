@@ -21,12 +21,19 @@ export async function POST(req: Request) {
     const businessName = String(body.businessName || body.name || "").trim();
     const timezone = String(body.timezone || "Europe/Rome").trim();
     const contactEmail: string = String(body?.contactEmail || "").trim().toLowerCase();
+    const acceptedTerms = body.acceptedTerms === true
 
-    if (!businessName) {
+    if (!businessName || businessName.length > 120 || !slugify(businessName)) {
       return NextResponse.json({ error: "Missing businessName" }, { status: 400 });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+    if (contactEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
       return NextResponse.json({ error: "Invalid contactEmail" }, { status: 400 });
+    }
+    if (timezone !== 'Europe/Rome') {
+      return NextResponse.json({ error: 'Invalid timezone' }, { status: 400 })
+    }
+    if (!acceptedTerms) {
+      return NextResponse.json({ error: "Terms must be accepted" }, { status: 400 });
     }
 
     // 2) Supabase "user" via JWT in cookie (Next middleware già refresh-a)
@@ -61,6 +68,25 @@ export async function POST(req: Request) {
       { auth: { persistSession: false } }
     );
 
+    const { data: existingMembership, error: membershipLookupError } =
+      await supabaseAdmin
+        .from('tenant_users')
+        .select('tenant_id')
+        .eq('user_id', userId)
+        .limit(1)
+        .maybeSingle()
+
+    if (membershipLookupError) {
+      console.error('onboarding membership lookup failed', membershipLookupError)
+      return NextResponse.json({ error: 'Unable to verify account' }, { status: 500 })
+    }
+    if (existingMembership) {
+      return NextResponse.json(
+        { error: 'Questo account è già associato a un’attività.' },
+        { status: 409 },
+      )
+    }
+
     // 4) Crea tenant (SOLO SERVICE)
     const baseSlug = slugify(businessName);
     // slug unico: aggiungo 4 char random per ridurre collisioni senza loop infinito
@@ -82,7 +108,7 @@ export async function POST(req: Request) {
 
     if (tenantErr || !tenantInsert) {
       return NextResponse.json(
-        { error: "Failed to create tenant", details: tenantErr?.message },
+        { error: "Failed to create tenant" },
         { status: 500 }
       );
     }
@@ -103,7 +129,7 @@ export async function POST(req: Request) {
       // rollback tenant se vuoi tenere pulito
       await supabaseAdmin.from("tenants").delete().eq("id", tenantId);
       return NextResponse.json(
-        { error: "Failed to create owner membership", details: tuErr.message },
+        { error: "Failed to create owner membership" },
         { status: 500 }
       );
     }
@@ -128,7 +154,7 @@ if (settingsErr) {
   await supabaseAdmin.from("tenants").delete().eq("id", tenantId);
 
   return NextResponse.json(
-    { error: "Failed to create tenant settings", details: settingsErr.message },
+    { error: "Failed to create tenant settings" },
     { status: 500 }
   );
 }
@@ -163,7 +189,7 @@ if (hoursErr) {
   await supabaseAdmin.from("tenants").delete().eq("id", tenantId);
 
   return NextResponse.json(
-    { error: "Failed to create tenant hours", details: hoursErr.message },
+    { error: "Failed to create tenant hours" },
     { status: 500 }
   );
 }

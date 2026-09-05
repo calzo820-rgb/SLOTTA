@@ -44,3 +44,27 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
           SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
           RESEND_API_KEY: re_ci_placeholder
+
+      - name: Smoke test production server
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
+          RESEND_API_KEY: re_ci_placeholder
+        run: |
+          npm start -- --hostname 127.0.0.1 > /tmp/slotta-next.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:3000/api/health > /tmp/health.json; then
+              break
+            fi
+            sleep 1
+          done
+
+          grep -q '"status":"ok"' /tmp/health.json
+          curl --fail --silent http://127.0.0.1:3000/ > /dev/null
+          curl --fail --silent http://127.0.0.1:3000/manifest.json | grep -q '"name": "Slotta"'
+          curl --fail --silent http://127.0.0.1:3000/robots.txt | grep -q 'sitemap.xml'
+          curl --fail --silent http://127.0.0.1:3000/sitemap.xml | grep -q 'https://www.slotta.it'
