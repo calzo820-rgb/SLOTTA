@@ -32,10 +32,18 @@ export default function InstallAppButton() {
       setDeferredPrompt(e as BeforeInstallPromptEvent)
     }
 
+    function onAppInstalled() {
+      setInstalled(true)
+      setDeferredPrompt(null)
+      setShowIosHelp(false)
+    }
+
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+    window.addEventListener('appinstalled', onAppInstalled)
 
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', onAppInstalled)
     }
   }, [])
 
@@ -44,8 +52,9 @@ export default function InstallAppButton() {
 
     if (deferredPrompt) {
       await deferredPrompt.prompt()
-      await deferredPrompt.userChoice
+      const choice = await deferredPrompt.userChoice
       setDeferredPrompt(null)
+      if (choice.outcome === 'accepted') setInstalled(true)
       return
     }
 
@@ -64,7 +73,7 @@ export default function InstallAppButton() {
       </button>
 
       {showIosHelp ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600 shadow-sm">
+        <div role="status" className="rounded-2xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600 shadow-sm">
           Per installare Slotta: apri il menu del browser e scegli{' '}
           <span className="font-black text-[#0F1D2D]">
             “Aggiungi alla schermata Home”

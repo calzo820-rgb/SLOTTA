@@ -1,6 +1,15 @@
 'use client'
 
-export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+import { useEffect } from 'react'
+
+export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    console.error('Unhandled application error', {
+      digest: error.digest,
+      message: error.message,
+    })
+  }, [error])
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F2F4F7] p-6 text-[#0F1D2D]">
       <div className="grid max-w-md gap-4 rounded-[2rem] border border-slate-200 bg-white p-6 text-center shadow-sm">

@@ -5,6 +5,12 @@ import InstallAppButton from '@/components/InstallAppButton'
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-[#F2F4F7] text-[#0F1D2D]">
+      <a
+        href="#contenuto"
+        className="sr-only z-[100] rounded-xl bg-white px-4 py-2 font-bold focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Vai al contenuto
+      </a>
       {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 md:px-6">
@@ -46,7 +52,7 @@ export default function HomePage() {
       </header>
 
       {/* HERO */}
-      <section className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:grid-cols-[1.05fr_0.95fr] md:items-center md:px-6 md:py-16">
+      <section id="contenuto" className="mx-auto grid max-w-7xl scroll-mt-24 gap-8 px-4 py-10 md:grid-cols-[1.05fr_0.95fr] md:items-center md:px-6 md:py-16">
         <div className="grid gap-5">
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#1FA7A6]/20 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-wide text-[#1FA7A6] shadow-sm">
             Gestionale prenotazioni
@@ -82,7 +88,7 @@ export default function HomePage() {
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="text-xl font-black text-[#0F1D2D]">€--</div>
+              <div className="text-xl font-black text-[#0F1D2D]">€30</div>
               <div className="mt-1 text-xs font-medium text-slate-500">
                 Al mese
               </div>
@@ -214,7 +220,7 @@ export default function HomePage() {
 
               <div className="mt-2 flex items-end gap-2">
                 <div className="text-5xl font-black tracking-tight text-[#0F1D2D]">
-                  €--
+                  €30
                 </div>
                 <div className="pb-2 text-sm font-bold text-slate-500">
                   / mese
