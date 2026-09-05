@@ -21,6 +21,27 @@ export function bookingTimeToMinutes(value: string): number | null {
   return Number(match[1]) * 60 + Number(match[2])
 }
 
+export function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+export function hasValidBookingCustomer(input: {
+  name: string
+  email: string
+  phone: string
+  note: string | null
+}): boolean {
+  return (
+    input.name.trim().length >= 2 &&
+    input.name.trim().length <= 120 &&
+    input.email.length <= 254 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email) &&
+    input.phone.length <= 40 &&
+    input.phone.replace(/\D/g, '').length >= 8 &&
+    (input.note === null || input.note.length <= 1_000)
+  )
+}
+
 export function getNowInTimeZone(
   timeZone: string,
   now = new Date(),

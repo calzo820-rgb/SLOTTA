@@ -5,8 +5,11 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import {
   bookingTimeToMinutes,
   getNowInTimeZone,
+  hasValidBookingCustomer,
   isValidBookingDate,
+  isUuid,
 } from '@/lib/bookingRequest'
+import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -47,7 +50,10 @@ export async function POST(req: Request) {
 
     const stripe = new Stripe(stripeSecret)
 
-    const body = await req.json()
+    const limited = enforceRateLimit(req, 'service-checkout', 10, 60_000)
+    if (limited) return limited
+    const body = await readJsonBody(req)
+    if (!body) return NextResponse.json({ error: 'Richiesta non valida.' }, { status: 400 })
 
     const tenant_id = String(body.tenant_id || '')
     const service_id = String(body.service_id || '')
@@ -73,32 +79,17 @@ export async function POST(req: Request) {
     if (!tenant_id || !service_id || !booking_date || !booking_time) {
       return NextResponse.json({ error: 'Dati mancanti.' }, { status: 400 })
     }
+    if (!isUuid(tenant_id) || !isUuid(service_id) || (requested_staff_id && !isUuid(requested_staff_id))) {
+      return NextResponse.json({ error: 'Identificativi non validi.' }, { status: 400 })
+    }
     const bookingMinutes = bookingTimeToMinutes(booking_time)
     if (!isValidBookingDate(booking_date) || bookingMinutes === null) {
       return NextResponse.json({ error: 'Data o orario non validi.' }, { status: 400 })
     }
 
-    if (!customer_name || customer_name.trim().length < 2) {
-      return NextResponse.json({ error: 'Nome non valido.' }, { status: 400 })
+    if (!hasValidBookingCustomer({ name: customer_name, email: customer_email, phone: customer_phone, note })) {
+      return NextResponse.json({ error: 'Dati cliente non validi o troppo lunghi.' }, { status: 400 })
     }
-
-    if (!customer_phone || customer_phone.replace(/\D/g, '').length < 8) {
-      return NextResponse.json({ error: 'Telefono non valido.' }, { status: 400 })
-    }
-
-   if (!customer_email) {
-  return NextResponse.json(
-    { error: 'Email obbligatoria.' },
-    { status: 400 },
-  )
-}
-
-if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email)) {
-  return NextResponse.json(
-    { error: 'Email non valida.' },
-    { status: 400 },
-  )
-}
     if (!success_url || !cancel_url) {
       return NextResponse.json(
         { error: 'URL di ritorno mancanti.' },

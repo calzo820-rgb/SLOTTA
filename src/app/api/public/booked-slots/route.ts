@@ -1,7 +1,8 @@
 // src/app/api/public/booked-slots/route.ts
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { isValidBookingDate } from '@/lib/bookingRequest'
+import { isUuid, isValidBookingDate } from '@/lib/bookingRequest'
+import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
 
 type BusyRow = {
   service_id: string
@@ -16,7 +17,10 @@ type BusyRow = {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    const limited = enforceRateLimit(req, 'booked-slots', 120, 60_000)
+    if (limited) return limited
+    const body = await readJsonBody(req, 4_096)
+    if (!body) return NextResponse.json({ error: 'Richiesta non valida.' }, { status: 400 })
 
     const tenant_id = String(body?.tenant_id || '')
     const booking_date = String(body?.booking_date || '')
@@ -36,6 +40,9 @@ export async function POST(req: Request) {
     }
     if (!isValidBookingDate(booking_date)) {
       return NextResponse.json({ error: 'Data non valida.' }, { status: 400 })
+    }
+    if (!isUuid(tenant_id) || (requested_staff_id && !isUuid(requested_staff_id))) {
+      return NextResponse.json({ error: 'Identificativi non validi.' }, { status: 400 })
     }
 
     /**

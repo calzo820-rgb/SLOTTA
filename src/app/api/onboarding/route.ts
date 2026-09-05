@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
 
 function slugify(input: string) {
   return input
@@ -13,12 +14,19 @@ function slugify(input: string) {
 export async function POST(req: Request) {
   try {
     // 1) Leggi body
-    const body = await req.json().catch(() => ({}));
-    const businessName: string = (body?.businessName || body?.name || "").trim();
-    const timezone: string = (body?.timezone || "Europe/Rome").trim();
+    const limited = enforceRateLimit(req, 'onboarding', 5, 60 * 60_000)
+    if (limited) return limited
+    const body = await readJsonBody(req, 8_192)
+    if (!body) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    const businessName = String(body.businessName || body.name || "").trim();
+    const timezone = String(body.timezone || "Europe/Rome").trim();
+    const contactEmail: string = String(body?.contactEmail || "").trim().toLowerCase();
 
     if (!businessName) {
       return NextResponse.json({ error: "Missing businessName" }, { status: 400 });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+      return NextResponse.json({ error: "Invalid contactEmail" }, { status: 400 });
     }
 
     // 2) Supabase "user" via JWT in cookie (Next middleware già refresh-a)
@@ -67,6 +75,7 @@ export async function POST(req: Request) {
   is_active: true,
   primary_color: "#1FA7A6",
   secondary_color: "#0F1D2D",
+  contact_email: contactEmail,
 })
       .select("id, slug")
       .single();

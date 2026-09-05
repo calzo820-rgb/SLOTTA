@@ -2,12 +2,14 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import {
   normalizeStaffCode,
   normalizeUsername,
   staffUsernameToEmail,
 } from '@/lib/usernames'
+import { safeInternalPath } from '@/lib/navigation'
 
 type LoginMode = 'owner' | 'staff'
 
@@ -25,7 +27,7 @@ function LoginContent() {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
-  const next = sp.get('next') || '/admin'
+  const next = safeInternalPath(sp.get('next'), '/admin')
 
 useEffect(() => {
   let cancelled = false
@@ -249,6 +251,15 @@ router.replace(next)
             required
           />
         </label>
+
+        {mode === 'owner' ? (
+          <Link
+            href="/forgot-password"
+            className="-mt-2 text-right text-sm font-bold text-[#1FA7A6] hover:underline"
+          >
+            Password dimenticata?
+          </Link>
+        ) : null}
 
         <button
           type="submit"

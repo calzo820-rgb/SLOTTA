@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { normalizeUsername, usernameToEmail } from '@/lib/usernames'
 
 
 
@@ -12,7 +11,6 @@ export default function OnboardingSalonPage() {
 
   const [salonName, setSalonName] = useState('')
   const [publicEmail, setPublicEmail] = useState('') // email “vera” del salone (contatto)
-  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
   const [loading, setLoading] = useState(false)
@@ -22,17 +20,16 @@ async function onSubmit(e: React.FormEvent) {
   e.preventDefault()
   setErr(null)
 
-  const u = normalizeUsername(username)
   if (!salonName.trim()) return setErr('Inserisci il nome del salone.')
-  if (!publicEmail.trim().includes('@')) return setErr('Inserisci una mail valida.')
-  if (u.length < 3) return setErr('Username troppo corto (min 3 caratteri).')
-  if (password.length < 6) return setErr('Password troppo corta (min 6 caratteri).')
+  const authEmail = publicEmail.trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail)) {
+    return setErr('Inserisci una email valida.')
+  }
+  if (password.length < 8) return setErr('Password troppo corta (min 8 caratteri).')
 
   setLoading(true)
   try {
-    const authEmail = usernameToEmail(u)
-
-    // 1) SIGN UP (username -> email finta)
+    // L'account gestore usa una email reale, necessaria anche per il recupero password.
     const { error: signUpErr } = await supabase.auth.signUp({
       email: authEmail,
       password,
@@ -63,9 +60,7 @@ async function onSubmit(e: React.FormEvent) {
       body: JSON.stringify({
         businessName: salonName.trim(),
         timezone: 'Europe/Rome',
-        // opzionali
-        contactEmail: publicEmail.trim(),
-        username: u,
+        contactEmail: authEmail,
       }),
     })
 
@@ -129,20 +124,7 @@ async function onSubmit(e: React.FormEvent) {
           />
         </label>
 
-        <div className="grid md:grid-cols-2 gap-3">
-          <label className="grid gap-1">
-            <span className="text-xs text-zinc-500">Username</span>
-            <input
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              className="border rounded-xl px-3 py-2"
-              placeholder="es. barberiachri"
-              autoCapitalize="none"
-              autoCorrect="off"
-              required
-            />
-          </label>
-
+        <div className="grid gap-3">
           <label className="grid gap-1">
             <span className="text-xs text-zinc-500">Password</span>
             <input
@@ -150,7 +132,9 @@ async function onSubmit(e: React.FormEvent) {
               value={password}
               onChange={e => setPassword(e.target.value)}
               className="border rounded-xl px-3 py-2"
-              placeholder="min 6 caratteri"
+              placeholder="min 8 caratteri"
+              minLength={8}
+              autoComplete="new-password"
               required
             />
           </label>
@@ -165,7 +149,7 @@ async function onSubmit(e: React.FormEvent) {
         </button>
 
         <div className="text-[11px] text-zinc-500">
-          User e password serviranno per accedere all’area admin.
+          Email e password serviranno per accedere all’area admin.
         </div>
       </form>
     </main>
