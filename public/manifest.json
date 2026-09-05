@@ -1,13 +1,16 @@
 {
   "name": "Slotta",
   "short_name": "Slotta",
-  "description": "Prenotazioni smart per attività e professionisti.",
-  "start_url": "/login",
+  "description": "Prenotazioni online semplici per attività e professionisti.",
+  "id": "/",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0F1D2D",
+  "background_color": "#F2F4F7",
   "theme_color": "#0F1D2D",
   "orientation": "portrait",
+  "categories": ["business", "productivity"],
+  "lang": "it",
   "icons": [
     {
       "src": "/icon-192.png",
