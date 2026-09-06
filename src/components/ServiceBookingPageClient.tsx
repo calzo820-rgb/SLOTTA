@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
 import {
   buildSegments,
   buildSlots,
@@ -107,7 +106,6 @@ const [paymentModeChoice, setPaymentModeChoice] =
  const mainColor = '#1FA7A6'
 
  const onlinePaymentsAvailable =
-  !!tenant.stripe_connect_account_id &&
   tenant.stripe_connect_charges_enabled === true &&
   tenant.stripe_connect_payouts_enabled === true
 
@@ -223,26 +221,27 @@ setSlotsRefreshing(true)
 setErrorSlots(null)
 
       try {
-        const { data: setRows, error: setErr } = await supabase
-          .from('tenant_settings')
-          .select(
-  'slot_minutes, service_staff_count, payment_mode_default, staff_selection_mode, lead_minutes',
-)
-          .eq('tenant_id', tenant.id)
-          .limit(1)
+        const configResponse = await fetch('/api/public/booking-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant_id: tenant.id, booking_date: date }),
+        })
+        const config = (await configResponse.json().catch(() => ({}))) as {
+          error?: string
+          settings?: Record<string, unknown> | null
+          staff?: StaffMember[]
+          tenant_hours?: TenantHoursForBooking | null
+          staff_hours?: StaffHoursRow[]
+          closures?: Closure[]
+        }
 
-        const { data: staffRows, error: staffErr } = await supabase
-          .from('staff_members')
-          .select('id, name, is_active, position')
-          .eq('tenant_id', tenant.id)
-          .eq('is_active', true)
-          .order('position', { ascending: true })
-          .order('name', { ascending: true })
+        if (!configResponse.ok) {
+          throw new Error(config.error || 'Errore caricamento disponibilità.')
+        }
 
-        if (staffErr) throw staffErr
+        const setRows = config.settings ? [config.settings] : []
+        const staffRows = config.staff || []
         if (!cancelled) setStaff((staffRows || []) as StaffMember[])
-
-        if (setErr) throw setErr
 
         const row = setRows?.[0] as
           | {
@@ -304,30 +303,8 @@ if (!cancelled) {
         const dow = d.getDay()
         let selectedStaffHours: StaffHoursRow | null = null
 
-        const { data: hourRows, error: hourErr } = await supabase
-          .from('tenant_hours')
-          .select(
-            `
-            dow,
-            is_closed,
-            open_time_am,
-            close_time_am,
-            pm_enabled,
-            has_split,
-            open_time_pm,
-            close_time_pm,
-            open_time,
-            close_time
-          `,
-          )
-          .eq('tenant_id', tenant.id)
-          .eq('dow', dow)
-          .limit(1)
-
-        if (hourErr) throw hourErr
-
         // Cast the first tenant_hours row to TenantHoursForBooking to avoid `any`
-        const r = hourRows?.[0] as TenantHoursForBooking | undefined
+        const r = config.tenant_hours || undefined
 
         if (!r || r.is_closed) {
           if (!cancelled) {
@@ -339,25 +316,8 @@ if (!cancelled) {
           return
         }
 
-        const { data: staffHoursRows, error: staffHoursErr } = await supabase
-          .from('staff_hours')
-          .select(
-            'staff_id, dow, open_time_am, close_time_am, pm_enabled, open_time_pm, close_time_pm, is_closed',
-          )
-          .eq('tenant_id', tenant.id)
-
-        if (staffHoursErr) throw staffHoursErr
-
-        const { data: closureRows, error: closureErr } = await supabase
-          .from('closures')
-          .select(
-            'id, staff_id, closure_type, start_date, end_date, all_day, start_time, end_time',
-          )
-          .eq('tenant_id', tenant.id)
-          .lte('start_date', date)
-          .gte('end_date', date)
-
-        if (closureErr) throw closureErr
+        const staffHoursRows = config.staff_hours || []
+        const closureRows = config.closures || []
 
         const closures = (closureRows || []) as Closure[]
 
