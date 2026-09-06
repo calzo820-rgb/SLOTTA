@@ -10,7 +10,7 @@ import {
   isValidBookingDate,
   isUuid,
 } from '@/lib/bookingRequest'
-import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 import {
   isStaffOverlapError,
   staffBusyResponseBody,
@@ -25,7 +25,7 @@ function escapeHtml(value: string) {
 }
 export async function POST(req: Request) {
   try {
-    const limited = enforceRateLimit(req, 'service-book', 10, 60_000)
+    const limited = await enforceDistributedRateLimit(req, 'service-book', 10, 60_000)
     if (limited) return limited
     const body = await readJsonBody(req)
     if (!body) return NextResponse.json({ error: 'Richiesta non valida.' }, { status: 400 })

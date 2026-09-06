@@ -1,5 +1,8 @@
-type Bucket = { count: number; resetAt: number }
-const buckets = new Map<string, Bucket>()
+import { createHash } from 'node:crypto'
+
+export function hashRateLimitIdentity(scope: string, ip: string) {
+  return createHash('sha256').update(`${scope}\0${ip}`).digest('hex')
+}
 
 export async function readJsonBody(
   request: Request,
@@ -21,37 +24,46 @@ export async function readJsonBody(
   }
 }
 
-export function enforceRateLimit(
+export async function enforceDistributedRateLimit(
   request: Request,
   scope: string,
   limit: number,
   windowMs: number,
-): Response | null {
+): Promise<Response | null> {
   const forwarded = request.headers.get('x-forwarded-for')
   const ip = forwarded?.split(',')[0]?.trim() || 'unknown'
-  const key = `${scope}:${ip}`
-  const now = Date.now()
-  const current = buckets.get(key)
+  const bucketKey = hashRateLimitIdentity(scope, ip)
+  const windowSeconds = Math.max(1, Math.ceil(windowMs / 1000))
 
-  if (!current || current.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs })
-    pruneBuckets(now)
-    return null
+  const { supabaseAdmin } = await import('@/lib/supabaseAdmin')
+  const { data, error } = await supabaseAdmin
+    .rpc('consume_api_rate_limit', {
+      p_bucket_key: bucketKey,
+      p_limit: limit,
+      p_window_seconds: windowSeconds,
+    })
+    .single()
+
+  const result = data as
+    | { allowed?: boolean; retry_after_seconds?: number }
+    | null
+
+  if (error || !result) {
+    console.error('distributed rate limit failed', {
+      scope,
+      code: error?.code || 'NO_DATA',
+    })
+    return Response.json(
+      { error: 'Servizio temporaneamente non disponibile.' },
+      { status: 503, headers: { 'Retry-After': '5' } },
+    )
   }
 
-  current.count += 1
-  if (current.count <= limit) return null
+  if (result.allowed === true) return null
 
-  const retryAfter = Math.max(1, Math.ceil((current.resetAt - now) / 1000))
+  const retryAfter = Math.max(1, Number(result.retry_after_seconds) || 1)
   return Response.json(
     { error: 'Troppe richieste. Riprova tra poco.' },
     { status: 429, headers: { 'Retry-After': String(retryAfter) } },
   )
-}
-
-function pruneBuckets(now: number) {
-  if (buckets.size < 1_000) return
-  for (const [key, bucket] of buckets) {
-    if (bucket.resetAt <= now) buckets.delete(key)
-  }
 }

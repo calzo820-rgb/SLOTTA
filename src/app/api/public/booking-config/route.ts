@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 import { isUuid, isValidBookingDate } from '@/lib/bookingRequest'
 import { supabaseServer } from '@/lib/supabaseServer'
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
   try {
-    const limited = enforceRateLimit(req, 'booking-config', 120, 60_000)
+    const limited = await enforceDistributedRateLimit(req, 'booking-config', 120, 60_000)
     if (limited) return limited
 
     const body = await readJsonBody(req, 4_096)

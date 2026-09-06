@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { resend } from '@/lib/resendClient'
-import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 
 function cleanText(value: unknown, max = 500) {
   return String(value || '').trim().slice(0, max)
@@ -80,7 +80,7 @@ console.log('Email inviata con Resend:', result.data)
 
 export async function POST(req: Request) {
   try {
-    const limited = enforceRateLimit(req, 'tester-leads', 5, 60 * 60_000)
+    const limited = await enforceDistributedRateLimit(req, 'tester-leads', 5, 60 * 60_000)
     if (limited) return limited
     const body = await readJsonBody(req, 8_192)
     if (!body) return NextResponse.json({ error: 'Richiesta non valida.' }, { status: 400 })

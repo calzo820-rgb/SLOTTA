@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 
 function slugify(input: string) {
   return input
@@ -14,7 +14,7 @@ function slugify(input: string) {
 export async function POST(req: Request) {
   try {
     // 1) Leggi body
-    const limited = enforceRateLimit(req, 'onboarding', 5, 60 * 60_000)
+    const limited = await enforceDistributedRateLimit(req, 'onboarding', 5, 60 * 60_000)
     if (limited) return limited
     const body = await readJsonBody(req, 8_192)
     if (!body) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
