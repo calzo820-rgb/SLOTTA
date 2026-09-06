@@ -45,7 +45,10 @@ test('rejects expired, malformed and tampered tokens', () => {
 
 test('requires guarded cancellation requests before updating holds', () => {
   assert.match(cancelRoute, /readJsonBody\(req, 4_096\)/)
-  assert.match(cancelRoute, /enforceRateLimit\(req, 'service-checkout-cancel'/)
+  assert.match(
+    cancelRoute,
+    /enforceDistributedRateLimit\(req, 'service-checkout-cancel'/,
+  )
   assert.match(cancelRoute, /isUuid\(holdId\)/)
   assert.match(cancelRoute, /verifyHoldCancelToken\(holdId, token, secret\)/)
   assert.match(cancelRoute, /\.eq\('status', 'pending'\)/)

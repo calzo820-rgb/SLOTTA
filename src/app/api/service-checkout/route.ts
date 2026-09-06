@@ -9,7 +9,7 @@ import {
   isValidBookingDate,
   isUuid,
 } from '@/lib/bookingRequest'
-import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 import {
   isStaffOverlapError,
   staffBusyResponseBody,
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 
     const stripe = new Stripe(stripeSecret)
 
-    const limited = enforceRateLimit(req, 'service-checkout', 10, 60_000)
+    const limited = await enforceDistributedRateLimit(req, 'service-checkout', 10, 60_000)
     if (limited) return limited
     const body = await readJsonBody(req)
     if (!body) return NextResponse.json({ error: 'Richiesta non valida.' }, { status: 400 })

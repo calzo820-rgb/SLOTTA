@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 import { isUuid } from '@/lib/bookingRequest'
 import { verifyHoldCancelToken } from '@/lib/holdCancelToken'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
   const safeRedirect = isSafeLocalUrl(redirectTo, origin) ? redirectTo : origin
 
   try {
-    const limited = enforceRateLimit(req, 'service-checkout-cancel', 30, 60_000)
+    const limited = await enforceDistributedRateLimit(req, 'service-checkout-cancel', 30, 60_000)
     if (limited) return limited
 
     const holdId = url.searchParams.get('hold_id') || ''
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const limited = enforceRateLimit(req, 'service-checkout-cancel', 30, 60_000)
+    const limited = await enforceDistributedRateLimit(req, 'service-checkout-cancel', 30, 60_000)
     if (limited) return limited
 
     const body = await readJsonBody(req, 4_096)
