@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { isStaffOverlapError } from '@/lib/bookingConflict'
 import type {
   Booking,
   Service,
@@ -525,7 +526,11 @@ async function updateStatus(id: string, status: Booking['status']) {
     .eq('id', id)
 
   if (error) {
-    setError(error.message || 'Errore aggiornamento prenotazione.')
+    setError(
+      isStaffOverlapError(error)
+        ? 'Operatore già occupato in questo orario. Aggiorna gli slot e riprova.'
+        : error.message || 'Errore aggiornamento prenotazione.',
+    )
     return
   }
 
@@ -754,10 +759,14 @@ try {
     setNewCustomerPhone('')
     setNewCustomerEmail('')
     setNewBookingNote('')
-  } catch (e: unknown) {
+} catch (e: unknown) {
   console.error(e)
   const message =
-    e instanceof Error ? e.message : 'Errore creazione appuntamento.'
+    isStaffOverlapError(e)
+      ? 'Operatore già occupato in questo orario. Aggiorna gli slot e riprova.'
+      : e instanceof Error
+        ? e.message
+        : 'Errore creazione appuntamento.'
   setError(message)
 } finally {
     setNewBookingSaving(false)
