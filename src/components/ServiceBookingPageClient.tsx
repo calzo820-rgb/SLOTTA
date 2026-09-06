@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import {
   buildSegments,
@@ -62,6 +63,7 @@ type BookData = {
 import { MobileStepBar } from './service-booking/MobileStepBar'
 
 export default function ServiceBookingPageClient({ tenant, services }: Props) {
+  const router = useRouter()
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
     services[0]?.id ?? null,
   )
@@ -699,7 +701,7 @@ if (checkoutData?.hold_id) {
 
     const bookingId = bookData.booking_id as string
 
-    window.location.href = `/t/${tenant.slug}/success?booking=${bookingId}`
+    router.push(`/t/${tenant.slug}/success?booking=${bookingId}`)
   } catch (e: unknown) {
     console.error(e)
     const message =
