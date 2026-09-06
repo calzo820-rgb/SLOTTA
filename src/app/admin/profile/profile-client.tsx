@@ -87,6 +87,7 @@ export default function ProfileClient({ tenantId }: { tenantId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [exporting, setExporting] = useState(false)
   const [connectLoading, setConnectLoading] = useState(false)
 const [connectError, setConnectError] = useState<string | null>(null)
 const [connectStatus, setConnectStatus] = useState<StripeConnectStatus | null>(null)
@@ -96,6 +97,7 @@ const [mobileSections, setMobileSections] = useState({
   identity: false,
   links: false,
   staff: false,
+  data: false,
 })
 
 function toggleMobileSection(section: keyof typeof mobileSections) {
@@ -244,6 +246,42 @@ async function startStripeConnectOnboarding() {
   setConnectError(message)
 } finally {
     setConnectLoading(false)
+  }
+}
+
+async function exportTenantData() {
+  try {
+    setExporting(true)
+    setError(null)
+
+    const response = await fetch('/api/admin/export-data', {
+      method: 'GET',
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      throw new Error(payload?.error || 'Impossibile esportare i dati.')
+    }
+
+    const blob = await response.blob()
+    const disposition = response.headers.get('content-disposition') || ''
+    const filename = disposition.match(/filename="([^"]+)"/)?.[1] || 'slotta-export.json'
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    setMsg('Esportazione completata.')
+    window.setTimeout(() => setMsg(null), 2500)
+  } catch (e: unknown) {
+    setError(e instanceof Error ? e.message : 'Impossibile esportare i dati.')
+  } finally {
+    setExporting(false)
   }
 }
   async function saveProfile() {
@@ -779,6 +817,44 @@ async function startStripeConnectOnboarding() {
                       className="min-h-[48px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-[#0F1D2D] transition hover:border-[#1FA7A6] hover:text-[#1FA7A6] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {connectStatusLoading ? 'Aggiornamento…' : 'Aggiorna stato'}
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+                <div className="hidden border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 md:block">
+                  <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">Dati e privacy</p>
+                  <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">Esporta i dati</h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => toggleMobileSection('data')}
+                  aria-expanded={mobileSections.data}
+                  className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left md:hidden"
+                >
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">Dati e privacy</p>
+                    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">Esporta i dati</h2>
+                  </div>
+                  <span aria-hidden="true" className="text-sm font-black text-slate-400">
+                    {mobileSections.data ? '▲' : '▼'}
+                  </span>
+                </button>
+
+                <div className={mobileSections.data ? 'block' : 'hidden md:block'}>
+                  <div className="grid gap-3 p-5">
+                    <p className="text-sm leading-6 text-slate-600">
+                      Scarica una copia JSON di profilo, servizi, staff, orari e prenotazioni della tua attività.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={exportTenantData}
+                      disabled={exporting}
+                      className="min-h-[48px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-[#0F1D2D] transition hover:border-[#1FA7A6] hover:text-[#1FA7A6] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {exporting ? 'Preparazione…' : 'Scarica i miei dati'}
                     </button>
                   </div>
                 </div>
