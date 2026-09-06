@@ -15,9 +15,9 @@ Ultimo audit tecnico: 6 settembre 2026.
 - [x] **SEC-01 — Ridurre la superficie pubblica Supabase.** Le letture pubbliche passano da API server che espongono soltanto i campi necessari; dati amministrativi e Stripe Connect non sono più leggibili dal browser.
 - [x] **SEC-02 — Bloccare gli inserimenti anonimi diretti nelle prenotazioni.** Le prenotazioni pubbliche passano esclusivamente dalle API server con validazione, disponibilità e antiabuso.
 - [x] **SEC-03 — Applicare privilegi SQL minimi.** Revocati ad `anon` tutti i privilegi diretti sulle tabelle e rimossi da `authenticated` i privilegi e gli accessi non necessari.
-- [ ] **SEC-04 — Proteggere l'annullamento degli hold Stripe.** Il solo UUID dell'hold non deve essere sufficiente per annullarlo: aggiungere token firmato/monouso, limite del body, validazione UUID e rate limiting.
+- [-] **SEC-04 — Proteggere l'annullamento degli hold Stripe.** Token firmato e a scadenza, validazione UUID, limite del body e rate limiting implementati; in attesa di preview e verifica post-deploy.
 - [ ] **SEC-05 — Rendere distribuito il rate limiting.** L'attuale contatore in memoria protegge una sola istanza Vercel e si azzera ai riavvii; usare Vercel Firewall oppure uno store condiviso per prenotazioni, checkout, onboarding, login e form tester.
-- [-] **SEC-06 — Chiudere gli advisor `SECURITY DEFINER`.** Migrazione e test pronti per spostare `is_tenant_owner`, `my_role` e `my_tenant_id` fuori dalla Data API pubblica, mantenendo funzionanti tutte le policy RLS.
+- [x] **SEC-06 — Chiudere gli advisor `SECURITY DEFINER`.** Helper RLS spostati nello schema privato con permessi minimi; 24 policy preservate, test autenticato e advisor verificati in produzione.
 - [ ] **SEC-07 — Test automatici di isolamento multi-tenant.** Provare con ruoli `anon`, proprietario e staff che un salone non possa leggere o modificare dati, prenotazioni, operatori o configurazioni di un altro salone.
 
 ## P1 — integrità di pagamenti e dati
@@ -58,7 +58,7 @@ Ultimo audit tecnico: 6 settembre 2026.
 - [x] **BASE-07 — RLS staff:** scritture sugli operatori riservate al proprietario.
 - [x] **BASE-08 — Concorrenza prenotazioni:** guardia atomica database tra booking e hold Stripe, con test transazionale e rollback.
 - [x] **BASE-09 — Dipendenze:** audit npm del 6 settembre 2026 con 0 vulnerabilità note.
-- [x] **BASE-10 — Qualità corrente:** 22 test automatici superati, lint e build puliti.
+- [x] **BASE-10 — Qualità corrente:** 26 test automatici superati, lint e build puliti.
 - [x] **BASE-11 — Produzione corrente:** deploy Vercel `READY`, endpoint health operativo e nessun errore runtime nelle ultime 24 ore al momento dell'audit.
 
 ## Limitazioni note del piano gratuito
