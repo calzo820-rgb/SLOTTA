@@ -10,6 +10,10 @@ import {
   isUuid,
 } from '@/lib/bookingRequest'
 import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
+import {
+  isStaffOverlapError,
+  staffBusyResponseBody,
+} from '@/lib/bookingConflict'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -473,8 +477,6 @@ try {
       stripe_session_id: session.id,
     })
   } catch (e: unknown) {
-    console.error('service-checkout error:', e)
-
     if (createdHoldId) {
       await supabaseAdmin
         .from('service_booking_holds')
@@ -482,6 +484,12 @@ try {
         .eq('id', createdHoldId)
         .eq('status', 'pending')
     }
+
+    if (isStaffOverlapError(e)) {
+      return NextResponse.json(staffBusyResponseBody(), { status: 409 })
+    }
+
+    console.error('service-checkout error:', e)
 
     const message =
       e instanceof Error

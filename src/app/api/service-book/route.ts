@@ -11,6 +11,10 @@ import {
   isUuid,
 } from '@/lib/bookingRequest'
 import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
+import {
+  isStaffOverlapError,
+  staffBusyResponseBody,
+} from '@/lib/bookingConflict'
 function escapeHtml(value: string) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -368,6 +372,10 @@ return NextResponse.json({ booking_id: inserted.id, staff_id: inserted.staff_id 
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
         : String(Date.now())
+
+    if (isStaffOverlapError(e)) {
+      return NextResponse.json(staffBusyResponseBody(), { status: 409 })
+    }
 
     // Log the raw error for debugging purposes; avoid reading arbitrary properties from unknown
     console.error('service-book error', e)
