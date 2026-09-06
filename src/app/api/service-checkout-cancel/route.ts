@@ -1,73 +1,86 @@
-// src/app/api/service-checkout-cancel/route.ts
 import { NextResponse } from 'next/server'
+import { enforceRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { isUuid } from '@/lib/bookingRequest'
+import { verifyHoldCancelToken } from '@/lib/holdCancelToken'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 function isSafeLocalUrl(value: string, origin: string) {
   try {
-    const parsed = new URL(value)
-    return parsed.origin === origin
+    return new URL(value).origin === origin
   } catch {
     return false
   }
 }
 
+async function cancelPendingHold(holdId: string) {
+  const { error } = await supabaseAdmin
+    .from('service_booking_holds')
+    .update({ status: 'cancelled' })
+    .eq('id', holdId)
+    .eq('status', 'pending')
+
+  if (error) throw error
+}
+
+function hasValidCancellation(holdId: string, token: string) {
+  const secret = process.env.STRIPE_SECRET_KEY
+  return Boolean(
+    secret &&
+      isUuid(holdId) &&
+      verifyHoldCancelToken(holdId, token, secret),
+  )
+}
+
 export async function GET(req: Request) {
+  const url = new URL(req.url)
+  const origin = url.origin
+  const redirectTo = url.searchParams.get('redirect_to') || origin
+  const safeRedirect = isSafeLocalUrl(redirectTo, origin) ? redirectTo : origin
+
   try {
-    const url = new URL(req.url)
-    const origin = url.origin
+    const limited = enforceRateLimit(req, 'service-checkout-cancel', 30, 60_000)
+    if (limited) return limited
 
-    const holdId = url.searchParams.get('hold_id')
-    const redirectTo = url.searchParams.get('redirect_to') || origin
+    const holdId = url.searchParams.get('hold_id') || ''
+    const cancelToken = url.searchParams.get('cancel_token') || ''
 
-    if (holdId) {
-      await supabaseAdmin
-        .from('service_booking_holds')
-        .update({ status: 'cancelled' })
-        .eq('id', holdId)
-        .eq('status', 'pending')
+    if (hasValidCancellation(holdId, cancelToken)) {
+      await cancelPendingHold(holdId)
     }
 
-    if (!isSafeLocalUrl(redirectTo, origin)) {
-      return NextResponse.redirect(origin)
-    }
-
-    return NextResponse.redirect(redirectTo)
-  } catch (e) {
-    console.error('service-checkout-cancel error:', e)
-
-    const origin = new URL(req.url).origin
-    return NextResponse.redirect(origin)
+    return NextResponse.redirect(safeRedirect)
+  } catch (error) {
+    console.error('service-checkout-cancel error:', error)
+    return NextResponse.redirect(safeRedirect)
   }
 }
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const holdId = String(body?.hold_id || '')
+    const limited = enforceRateLimit(req, 'service-checkout-cancel', 30, 60_000)
+    if (limited) return limited
 
-    if (!holdId) {
+    const body = await readJsonBody(req, 4_096)
+    if (!body) {
+      return NextResponse.json({ error: 'Richiesta non valida.' }, { status: 400 })
+    }
+
+    const holdId = String(body.hold_id || '')
+    const cancelToken = String(body.cancel_token || '')
+    if (!hasValidCancellation(holdId, cancelToken)) {
       return NextResponse.json(
-        { error: 'hold_id mancante.' },
-        { status: 400 },
+        { error: 'Autorizzazione di annullamento non valida o scaduta.' },
+        { status: 403 },
       )
     }
 
-    const { error } = await supabaseAdmin
-      .from('service_booking_holds')
-      .update({ status: 'cancelled' })
-      .eq('id', holdId)
-      .eq('status', 'pending')
-
-    if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 },
-      )
-    }
-
+    await cancelPendingHold(holdId)
     return NextResponse.json({ ok: true })
-  } catch (e) {
-    console.error('service-checkout-cancel POST error:', e)
-
+  } catch (error) {
+    console.error('service-checkout-cancel POST error:', error)
     return NextResponse.json(
       { error: 'Errore annullamento hold.' },
       { status: 500 },

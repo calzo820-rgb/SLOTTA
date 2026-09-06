@@ -14,6 +14,7 @@ import {
   isStaffOverlapError,
   staffBusyResponseBody,
 } from '@/lib/bookingConflict'
+import { createHoldCancelToken } from '@/lib/holdCancelToken'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -419,9 +420,16 @@ try {
 
     createdHoldId = hold.id
 
+    const holdCancelToken = createHoldCancelToken(
+      hold.id,
+      expiresAt,
+      stripeSecret,
+    )
+
     // 9. Cancel URL sicuro: se il cliente annulla, marchiamo l'hold come cancelled.
     const safeCancelUrl = new URL('/api/service-checkout-cancel', origin)
     safeCancelUrl.searchParams.set('hold_id', hold.id)
+    safeCancelUrl.searchParams.set('cancel_token', holdCancelToken)
     safeCancelUrl.searchParams.set('redirect_to', cancel_url)
 
     // 10. Stripe Checkout
@@ -474,6 +482,7 @@ try {
     return NextResponse.json({
       url: session.url,
       hold_id: hold.id,
+      hold_cancel_token: holdCancelToken,
       stripe_session_id: session.id,
     })
   } catch (e: unknown) {

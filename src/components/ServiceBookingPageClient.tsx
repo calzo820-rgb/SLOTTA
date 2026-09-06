@@ -51,6 +51,7 @@ type CheckoutData = {
   url?: string
   error?: string
   hold_id?: string
+  hold_cancel_token?: string
 }
 
 // The response returned by the booking API when paying in person includes
@@ -144,9 +145,10 @@ useEffect(() => {
     if (alreadyRunning) return
 
     const holdId = sessionStorage.getItem('slotta_pending_hold_id')
+    const cancelToken = sessionStorage.getItem('slotta_pending_hold_cancel_token')
     const leftForStripe = sessionStorage.getItem('slotta_left_for_stripe')
 
-    if (!holdId || leftForStripe !== '1') return
+    if (!holdId || !cancelToken || leftForStripe !== '1') return
 
     alreadyRunning = true
 
@@ -159,7 +161,7 @@ try {
   const res = await fetch('/api/service-checkout-cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hold_id: holdId }),
+        body: JSON.stringify({ hold_id: holdId, cancel_token: cancelToken }),
       })
 
       const data = await res.json().catch(() => ({}))
@@ -177,6 +179,7 @@ try {
       console.warn('Errore annullamento hold abbandonato:', err)
     } finally {
       sessionStorage.removeItem('slotta_pending_hold_id')
+      sessionStorage.removeItem('slotta_pending_hold_cancel_token')
       sessionStorage.removeItem('slotta_left_for_stripe')
 
       setSubmitting(false)
@@ -605,8 +608,12 @@ async function submitBooking() {
 
   throw new Error(msg)
 }
-if (checkoutData?.hold_id) {
+if (checkoutData?.hold_id && checkoutData?.hold_cancel_token) {
   sessionStorage.setItem('slotta_pending_hold_id', checkoutData.hold_id)
+  sessionStorage.setItem(
+    'slotta_pending_hold_cancel_token',
+    checkoutData.hold_cancel_token,
+  )
   sessionStorage.setItem('slotta_left_for_stripe', '1')
 }
       window.location.href = checkoutData.url
