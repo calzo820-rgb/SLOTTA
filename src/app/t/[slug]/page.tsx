@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import ServiceBookingPageClient from '@/components/ServiceBookingPageClient'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabaseServer } from '@/lib/supabaseServer'
 
 type Service = {
   id: string
@@ -25,6 +20,7 @@ export default async function TenantHome({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
+  const supabase = supabaseServer()
 
   const { data: tenants, error: tErr } = await supabase
 .from('tenants')
@@ -40,7 +36,6 @@ export default async function TenantHome({
   instagram_url,
   website_url,
   is_active,
-  stripe_connect_account_id,
   stripe_connect_charges_enabled,
   stripe_connect_payouts_enabled
 `)
@@ -100,7 +95,6 @@ export default async function TenantHome({
   whatsapp_phone: tenant.whatsapp_phone,
   instagram_url: tenant.instagram_url,
   website_url: tenant.website_url,
-  stripe_connect_account_id: tenant.stripe_connect_account_id,
   stripe_connect_charges_enabled: tenant.stripe_connect_charges_enabled,
   stripe_connect_payouts_enabled: tenant.stripe_connect_payouts_enabled,
 }}
