@@ -10,7 +10,14 @@ export type Booking = {
   booking_date: string
   booking_time: string
   status: 'pending' | 'confirmed' | 'done' | 'cancelled'
-  payment_status: 'unpaid' | 'paid'
+  payment_status:
+    | 'unpaid'
+    | 'paid'
+    | 'pending'
+    | 'partially_refunded'
+    | 'refunded'
+    | 'disputed'
+    | 'dispute_lost'
   created_at: string
   manager_seen_at?: string | null
   checkout_pending?: boolean | null

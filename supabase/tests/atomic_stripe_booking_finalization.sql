@@ -34,15 +34,15 @@ begin
 
   if has_function_privilege(
     'anon',
-    'public.finalize_stripe_booking(uuid,uuid,text,text,bigint,text,text)',
+    'public.finalize_stripe_booking(uuid,uuid,text,text,bigint,text,text,text,text)',
     'execute'
   ) or has_function_privilege(
     'authenticated',
-    'public.finalize_stripe_booking(uuid,uuid,text,text,bigint,text,text)',
+    'public.finalize_stripe_booking(uuid,uuid,text,text,bigint,text,text,text,text)',
     'execute'
   ) or not has_function_privilege(
     'service_role',
-    'public.finalize_stripe_booking(uuid,uuid,text,text,bigint,text,text)',
+    'public.finalize_stripe_booking(uuid,uuid,text,text,bigint,text,text,text,text)',
     'execute'
   ) then
     raise exception 'SLOTTA_STRIPE_FINALIZER_PRIVILEGES_INVALID';
@@ -91,7 +91,9 @@ begin
     'pi_pay01_test',
     3500,
     'eur',
-    'acct_pay01_test'
+    'acct_pay01_test',
+    'evt_pay01_success',
+    'checkout.session.completed'
   ) result;
 
   if v_booking_id is null or not v_was_created then
@@ -126,7 +128,9 @@ begin
     'pi_pay01_test',
     3500,
     'eur',
-    'acct_pay01_test'
+    'acct_pay01_test',
+    'evt_pay01_success',
+    'checkout.session.completed'
   ) result;
 
   select count(*)
@@ -179,7 +183,9 @@ begin
       'pi_pay02_test',
       1,
       'eur',
-      'acct_pay01_test'
+      'acct_pay01_test',
+      'evt_pay02_mismatch',
+      'checkout.session.completed'
     );
   exception
     when sqlstate '22023' then

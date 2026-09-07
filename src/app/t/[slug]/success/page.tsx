@@ -17,7 +17,15 @@ type BookingRow = {
   booking_date: string | null
   booking_time: string | null
   status: 'pending' | 'confirmed' | 'done' | 'cancelled' | null
-  payment_status: 'unpaid' | 'paid' | 'pending' | null
+  payment_status:
+    | 'unpaid'
+    | 'paid'
+    | 'pending'
+    | 'partially_refunded'
+    | 'refunded'
+    | 'disputed'
+    | 'dispute_lost'
+    | null
 }
 
 type ServiceRow = {
@@ -58,6 +66,10 @@ function bookingStatusLabel(status?: string | null) {
 function paymentStatusLabel(status?: string | null) {
   if (status === 'paid') return 'Pagato online'
   if (status === 'pending') return 'Pagamento in verifica'
+  if (status === 'partially_refunded') return 'Rimborso parziale'
+  if (status === 'refunded') return 'Rimborsato'
+  if (status === 'disputed') return 'Pagamento contestato'
+  if (status === 'dispute_lost') return 'Contestazione conclusa'
   return 'Da pagare in salone'
 }
 

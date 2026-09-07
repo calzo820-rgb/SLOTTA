@@ -1,6 +1,11 @@
 import type { Booking, Service } from '../types'
 import { fmtDate, fmtTime, euro } from '../utils/booking-format'
-import { Badge, statusLabel, payLabel } from './BookingBadges'
+import {
+  Badge,
+  canManuallyTogglePayment,
+  statusLabel,
+  payLabel,
+} from './BookingBadges'
 
 type Props = {
   loading: boolean
@@ -227,18 +232,20 @@ export function BookingsTable({
                       </>
                     ) : b.status === 'confirmed' ? (
                       <>
-                        <button
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation()
-                            onTogglePaid(b.id, b.payment_status)
-                          }}
-                          className="inline-flex h-11 w-[130px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-[#1FA7A6] hover:text-[#1FA7A6]"
-                        >
-                          {b.payment_status === 'paid'
-                            ? 'Non pagato'
-                            : 'Segna pagato'}
-                        </button>
+                        {canManuallyTogglePayment(b.payment_status) ? (
+                          <button
+                            type="button"
+                            onClick={e => {
+                              e.stopPropagation()
+                              onTogglePaid(b.id, b.payment_status)
+                            }}
+                            className="inline-flex h-11 w-[130px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-[#1FA7A6] hover:text-[#1FA7A6]"
+                          >
+                            {b.payment_status === 'paid'
+                              ? 'Non pagato'
+                              : 'Segna pagato'}
+                          </button>
+                        ) : null}
 
                         <button
                           type="button"
@@ -252,7 +259,7 @@ export function BookingsTable({
                         </button>
                       </>
                     ) : b.status !== 'cancelled' ? (
-                      <button
+                      canManuallyTogglePayment(b.payment_status) ? <button
                         type="button"
                         onClick={e => {
                           e.stopPropagation()
@@ -263,7 +270,7 @@ export function BookingsTable({
                         {b.payment_status === 'paid'
                           ? 'Non pagato'
                           : 'Segna pagato'}
-                      </button>
+                      </button> : null
                     ) : null}
                   </div>
                 </td>

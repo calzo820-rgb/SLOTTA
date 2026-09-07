@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { Booking, Service } from '../types'
 import { fmtDate, fmtTime, euro } from '../utils/booking-format'
-import { Badge, statusLabel, payLabel } from './BookingBadges'
+import {
+  Badge,
+  canManuallyTogglePayment,
+  statusLabel,
+  payLabel,
+} from './BookingBadges'
 
 function cleanPhoneForWhatsapp(phone: string) {
   const digits = phone.replace(/\D/g, '')
@@ -272,16 +277,18 @@ async function copyContact() {
               </>
             ) : booking.status === 'confirmed' ? (
               <>
-                <button
-                  onClick={async () => {
-                    await onTogglePaid(booking.id, booking.payment_status)
-                  }}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-[#1FA7A6] hover:text-[#1FA7A6]"
-                >
-                  {booking.payment_status === 'paid'
-                    ? 'Segna NON pagato'
-                    : 'Segna pagato'}
-                </button>
+                {canManuallyTogglePayment(booking.payment_status) ? (
+                  <button
+                    onClick={async () => {
+                      await onTogglePaid(booking.id, booking.payment_status)
+                    }}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-[#1FA7A6] hover:text-[#1FA7A6]"
+                  >
+                    {booking.payment_status === 'paid'
+                      ? 'Segna NON pagato'
+                      : 'Segna pagato'}
+                  </button>
+                ) : null}
 
                 <button
                   onClick={async () => {
@@ -294,7 +301,8 @@ async function copyContact() {
               </>
             ) : (
               <>
-                {booking.status !== 'cancelled' && (
+                {booking.status !== 'cancelled' &&
+                  canManuallyTogglePayment(booking.payment_status) ? (
                   <button
                     onClick={async () => {
                       await onTogglePaid(booking.id, booking.payment_status)
@@ -305,7 +313,7 @@ async function copyContact() {
                       ? 'Segna NON pagato'
                       : 'Segna pagato'}
                   </button>
-                )}
+                ) : null}
 
                 <button
                   onClick={async () => {

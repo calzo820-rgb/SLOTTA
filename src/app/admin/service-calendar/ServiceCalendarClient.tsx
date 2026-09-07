@@ -110,6 +110,7 @@ async function updateStatus(id: string, status: Booking['status']) {
 }
 
 async function togglePaid(id: string, current: Booking['payment_status']) {
+  if (current !== 'paid' && current !== 'unpaid') return
   try {
     setSavingAction(true)
 
