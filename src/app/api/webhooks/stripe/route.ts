@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { getResend } from '@/lib/resendClient'
 import { sendPushNotificationsToTenant } from '@/lib/sendPushNotifications'
 import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
+import { sendTransactionalEmail } from '@/lib/transactionalEmail'
 import {
   getPaidCheckoutDetails,
   isStripeFinalizationError,
@@ -158,7 +158,7 @@ async function handlePost(req: Request) {
        */
       if (hold.customer_email) {
         try {
-          await getResend().emails.send({
+          await sendTransactionalEmail({
             from,
             to: hold.customer_email,
             subject: `Prenotazione confermata - ${businessName}`,
@@ -185,7 +185,7 @@ async function handlePost(req: Request) {
                 </p>
               </div>
             `,
-          })
+          }, `stripe-customer-${event.id}`)
         } catch {
           logApiEvent('stripe_customer_email_failed', 'error')
         }
@@ -196,7 +196,7 @@ async function handlePost(req: Request) {
        */
       if (tenant?.contact_email) {
         try {
-          await getResend().emails.send({
+          await sendTransactionalEmail({
             from,
             to: tenant.contact_email,
             subject: `Nuova prenotazione pagata - ${businessName}`,
@@ -224,7 +224,7 @@ async function handlePost(req: Request) {
                 </p>
               </div>
             `,
-          })
+          }, `stripe-owner-${event.id}`)
         } catch {
           logApiEvent('stripe_owner_email_failed', 'error')
         }

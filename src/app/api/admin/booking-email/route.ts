@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { getResend } from '@/lib/resendClient'
+import { sendTransactionalEmail } from '@/lib/transactionalEmail'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -212,7 +212,7 @@ if (type === 'cancelled') {
 }
     const from = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
-    await getResend().emails.send({
+    await sendTransactionalEmail({
       from,
       to,
       subject,
@@ -278,17 +278,13 @@ if (type === 'cancelled') {
           </p>
         </div>
       `,
-    })
+    }, `booking-${type}-${booking.id}`)
 
     return NextResponse.json({ ok: true })
-} catch (e: unknown) {
-  console.error('booking-email error:', e)
-
-  const message =
-    e instanceof Error ? e.message : 'Errore invio email prenotazione.'
-
+} catch {
+  console.error(JSON.stringify({ level: 'error', event: 'admin_booking_email_failed' }))
   return NextResponse.json(
-    { error: message },
+    { error: 'Errore invio email prenotazione.' },
     { status: 500 },
   )
 }
