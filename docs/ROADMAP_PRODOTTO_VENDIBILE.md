@@ -27,14 +27,14 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **PAY-02 — Verificare lo stato economico del pagamento.** Controlli su `payment_status`, modalità, importo, valuta, PaymentIntent, tenant e account Connect pubblicati e verificati.
 - [x] **PAY-03 — Gestire tutti gli eventi Stripe rilevanti.** Pagamento asincrono riuscito/fallito, scadenza sessione, rimborso, disputa e account Connect disabilitato pubblicati con registro eventi idempotente; migrazione, privilegi, test transazionale e produzione verificati.
 - [ ] **PAY-04 — Collaudo Stripe Connect reale.** Eseguire in produzione pagamento, annullamento, sessione abbandonata, rimborso e verifica accredito sul conto collegato. Richiede intervento manuale del titolare.
-- [-] **DATA-01 — Proteggere la pagina di conferma prenotazione.** Token casuale dedicato con solo hash nel database, scadenza e revoca implementati per prenotazioni dirette e Stripe; in attesa di PR, migrazione e test transazionale.
+- [x] **DATA-01 — Proteggere la pagina di conferma prenotazione.** Token casuale dedicato con solo hash nel database, scadenza e revoca pubblicati per prenotazioni dirette e Stripe; migrazione, test transazionale e produzione verificati.
 - [ ] **DATA-02 — Cancellazione account e politica di conservazione.** L'esportazione esiste; aggiungere richiesta/cancellazione completa del tenant, tempi di retention per prenotazioni e lead e procedura di revoca sessioni.
 - [ ] **DATA-03 — Backup e prova di ripristino.** Documentare backup, export fuori piattaforma e ripristino; eseguire almeno una prova su ambiente non produttivo.
 
 ## P1 — affidabilità operativa
 
 - [x] **OPS-01 — Rendere la build indipendente dall'inizializzazione delle credenziali.** Inizializzazione lazy e validazione esplicita applicate ai client Supabase e Resend; build senza credenziali, test, preview e produzione verificati.
-- [ ] **OPS-02 — Logging strutturato e codici richiesta.** Uniformare i log delle API senza dati personali, aggiungere `requestId`, durata, route e codici errore pubblici stabili.
+- [-] **OPS-02 — Logging strutturato e codici richiesta.** `requestId`, durata, route e codici errore pubblici stabili implementati sulle API pubbliche critiche e sul webhook Stripe, senza contenuti delle richieste; in attesa di PR e verifica produzione.
 - [ ] **OPS-03 — Monitoraggio automatico e allarmi.** Aggiungere error tracking/uptime per home, health, prenotazione e webhook; su piano gratuito mantenere anche una procedura di controllo Vercel.
 - [ ] **OPS-04 — Test end-to-end.** Automatizzare i flussi cliente, proprietario e staff, inclusi prenotazione, conflitto, autorizzazioni, email simulata e webhook Stripe firmato.
 - [ ] **OPS-05 — Affidabilità email.** Verificare dominio mittente, SPF/DKIM/DMARC, gestione errori Resend, deduplicazione e retry delle email importanti.
@@ -59,7 +59,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **BASE-07 — RLS staff:** scritture sugli operatori riservate al proprietario.
 - [x] **BASE-08 — Concorrenza prenotazioni:** guardia atomica database tra booking e hold Stripe, con test transazionale e rollback.
 - [x] **BASE-09 — Dipendenze:** audit npm del 6 settembre 2026 con 0 vulnerabilità note.
-- [x] **BASE-10 — Qualità corrente:** 42 test automatici pubblicati; la tranche DATA-01 porta la suite locale a 45, con lint e build puliti.
+- [x] **BASE-10 — Qualità corrente:** 45 test automatici pubblicati; la tranche OPS-02 aggiunge test locali dedicati, con lint e build da verificare.
 - [x] **BASE-11 — Produzione corrente:** deploy Vercel `READY`, endpoint health operativo e nessun errore runtime nelle ultime 24 ore al momento dell'audit.
 
 ## Limitazioni note del piano gratuito

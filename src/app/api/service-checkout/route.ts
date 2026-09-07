@@ -23,6 +23,7 @@ import {
   createBookingConfirmationToken,
   hashBookingConfirmationToken,
 } from '@/lib/bookingConfirmationToken'
+import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -50,7 +51,7 @@ type BusyRow = {
   booking_time: string | null
 }
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   let createdHoldId: string | null = null
 
   try {
@@ -200,11 +201,12 @@ try {
     .lte('expires_at', new Date().toISOString())
 
   if (cleanupHoldsErr) {
-    console.warn('Errore pulizia hold scaduti:', cleanupHoldsErr.message)
+    logApiEvent('expired_hold_cleanup_failed')
   }
-} catch (cleanupHoldsErr) {
-  console.warn('Errore pulizia hold scaduti:', cleanupHoldsErr)
+} catch {
+  logApiEvent('expired_hold_cleanup_failed')
 }
+
     // 6. Hold Stripe attivi del giorno
     const { data: activeHolds, error: hErr } = await getSupabaseAdmin()
       .from('service_booking_holds')
@@ -451,7 +453,7 @@ try {
       )
     }
 
-    console.error('service-checkout error:', e)
+    logApiEvent('service_checkout_failed', 'error')
 
     const message =
       e instanceof Error
@@ -464,3 +466,5 @@ try {
     )
   }
 }
+
+export const POST = observeApiRoute('/api/service-checkout', handlePost)

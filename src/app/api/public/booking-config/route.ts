@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server'
 import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 import { isUuid, isValidBookingDate } from '@/lib/bookingRequest'
 import { supabaseServer } from '@/lib/supabaseServer'
+import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   try {
     const limited = await enforceDistributedRateLimit(req, 'booking-config', 120, 60_000)
     if (limited) return limited
@@ -95,11 +96,13 @@ export async function POST(req: Request) {
       staff_hours: staffHoursResult.data || [],
       closures: closuresResult.data || [],
     })
-  } catch (error) {
-    console.error('booking-config error:', error)
+  } catch {
+    logApiEvent('booking_config_load_failed', 'error')
     return NextResponse.json(
       { error: 'Errore caricamento configurazione.' },
       { status: 500 },
     )
   }
 }
+
+export const POST = observeApiRoute('/api/public/booking-config', handlePost)

@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { getResend } from '@/lib/resendClient'
 import { sendPushNotificationsToTenant } from '@/lib/sendPushNotifications'
+import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
 import {
   getPaidCheckoutDetails,
   isStripeFinalizationError,
@@ -25,7 +26,7 @@ function escapeHtml(value: string) {
     .replaceAll("'", '&#039;')
 }
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
@@ -57,11 +58,9 @@ export async function POST(req: Request) {
       signature,
       webhookSecret,
     )
-  } catch (err: unknown) {
-    // Log the raw error for debugging
-    console.error('Errore verifica webhook Stripe:', err)
-    const message = err instanceof Error ? err.message : 'Errore sconosciuto'
-    return new NextResponse(`Webhook Error: ${message}`, { status: 400 })
+  } catch {
+    logApiEvent('stripe_webhook_signature_invalid')
+    return new NextResponse('Webhook signature invalid', { status: 400 })
   }
 
   try {
@@ -81,11 +80,7 @@ export async function POST(req: Request) {
       const payment = getPaidCheckoutDetails(session, event.account || null)
 
       if (!payment) {
-        console.warn('Checkout Stripe non idonea alla finalizzazione:', {
-          eventId: event.id,
-          sessionId: session.id,
-          paymentStatus: session.payment_status,
-        })
+        logApiEvent('stripe_checkout_not_finalizable')
         return NextResponse.json({ received: true })
       }
 
@@ -136,8 +131,6 @@ export async function POST(req: Request) {
       if (holdErr || !hold) {
         throw holdErr || new Error('Hold prenotazione non trovato')
       }
-
-      const insertedBooking = { id: finalizationResult.booking_id }
 
       /**
        * Recupero dati attività e servizio per email/notifiche
@@ -193,8 +186,8 @@ export async function POST(req: Request) {
               </div>
             `,
           })
-        } catch (emailErr) {
-          console.error('Errore invio email cliente pagamento Stripe:', emailErr)
+        } catch {
+          logApiEvent('stripe_customer_email_failed', 'error')
         }
       }
 
@@ -232,8 +225,8 @@ export async function POST(req: Request) {
               </div>
             `,
           })
-        } catch (emailErr) {
-          console.error('Errore invio email gestore pagamento Stripe:', emailErr)
+        } catch {
+          logApiEvent('stripe_owner_email_failed', 'error')
         }
       }
 
@@ -253,15 +246,11 @@ export async function POST(req: Request) {
           url: '/admin/service-bookings',
           badgeCount: pendingCount ?? 0,
         })
-      } catch (pushErr) {
-        console.error('Errore invio push prenotazione pagata:', pushErr)
+      } catch {
+        logApiEvent('stripe_booking_push_failed', 'error')
       }
 
-      console.log('Prenotazione creata da hold Stripe:', {
-        holdId: hold.id,
-        bookingId: insertedBooking?.id,
-        sessionId: session.id,
-      })
+      logApiEvent('stripe_booking_finalized', 'info')
     }
 
     /**
@@ -281,11 +270,7 @@ export async function POST(req: Request) {
       )
 
       if (!details) {
-        console.warn('Evento Checkout Stripe non coerente:', {
-          eventId: event.id,
-          eventType: event.type,
-          sessionId: session.id,
-        })
+        logApiEvent('stripe_checkout_event_incoherent')
         return NextResponse.json({ received: true })
       }
 
@@ -316,10 +301,7 @@ export async function POST(req: Request) {
       const details = getRefundDetails(charge, event.account || null)
 
       if (!details) {
-        console.warn('Rimborso Stripe non coerente:', {
-          eventId: event.id,
-          chargeId: charge.id,
-        })
+        logApiEvent('stripe_refund_event_incoherent')
         return NextResponse.json({ received: true })
       }
 
@@ -353,10 +335,7 @@ export async function POST(req: Request) {
       const details = getDisputeDetails(dispute, event.account || null)
 
       if (!details) {
-        console.warn('Disputa Stripe non coerente:', {
-          eventId: event.id,
-          disputeId: dispute.id,
-        })
+        logApiEvent('stripe_dispute_event_incoherent')
         return NextResponse.json({ received: true })
       }
 
@@ -387,11 +366,7 @@ export async function POST(req: Request) {
       const eventAccountId = event.account || account.id
 
       if (eventAccountId !== account.id) {
-        console.warn('Account Connect non coerente:', {
-          eventId: event.id,
-          eventAccountId,
-          accountId: account.id,
-        })
+        logApiEvent('stripe_connect_event_incoherent')
         return NextResponse.json({ received: true })
       }
 
@@ -414,11 +389,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true })
   } catch (err: unknown) {
     if (isStripeFinalizationError(err)) {
-      console.warn('Webhook Stripe rifiutato dalla finalizzazione:', err)
+      logApiEvent('stripe_webhook_finalization_rejected')
       return NextResponse.json({ received: true })
     }
-    // Log the raw error for debugging
-    console.error('Errore gestione webhook Stripe:', err)
+    logApiEvent('stripe_webhook_processing_failed', 'error')
     return NextResponse.json(
       {
         error:
@@ -430,3 +404,5 @@ export async function POST(req: Request) {
     )
   }
 }
+
+export const POST = observeApiRoute('/api/webhooks/stripe', handlePost)
