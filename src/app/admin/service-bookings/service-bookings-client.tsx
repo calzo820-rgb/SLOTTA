@@ -546,6 +546,7 @@ async function updateStatus(id: string, status: Booking['status']) {
 }
 
   async function togglePaid(id: string, current: Booking['payment_status']) {
+    if (current !== 'paid' && current !== 'unpaid') return
     const next: Booking['payment_status'] = current === 'paid' ? 'unpaid' : 'paid'
 
     await supabase

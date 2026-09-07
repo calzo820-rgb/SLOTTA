@@ -1,6 +1,11 @@
 import type { Booking, Service } from '../types'
 import { fmtDate, fmtTime, euro } from '../utils/booking-format'
-import { Badge, statusLabel, payLabel } from './BookingBadges'
+import {
+  Badge,
+  canManuallyTogglePayment,
+  statusLabel,
+  payLabel,
+} from './BookingBadges'
 
 type Props = {
   loading: boolean
@@ -203,7 +208,7 @@ export function BookingsTable({
                   <div className="flex flex-wrap justify-end gap-2">
                     {b.status === 'pending' ? (
                       <>
-                        <button
+                        {canManuallyTogglePayment(b.payment_status) ? <button
                           type="button"
                           onClick={e => {
                             e.stopPropagation()
@@ -212,7 +217,7 @@ export function BookingsTable({
                           className="inline-flex h-11 w-[110px] items-center justify-center rounded-2xl border border-[#1FA7A6]/30 bg-[#E6FFFA] px-3 text-sm font-bold text-[#0F766E] transition hover:bg-[#CCFBF1]"
                         >
                           Conferma
-                        </button>
+                        </button> : null}
 
                         <button
                           type="button"
@@ -252,7 +257,7 @@ export function BookingsTable({
                         </button>
                       </>
                     ) : b.status !== 'cancelled' ? (
-                      <button
+                      canManuallyTogglePayment(b.payment_status) ? <button
                         type="button"
                         onClick={e => {
                           e.stopPropagation()
@@ -263,7 +268,7 @@ export function BookingsTable({
                         {b.payment_status === 'paid'
                           ? 'Non pagato'
                           : 'Segna pagato'}
-                      </button>
+                      </button> : null
                     ) : null}
                   </div>
                 </td>

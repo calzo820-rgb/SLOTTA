@@ -7,6 +7,11 @@ import {
   getPaidCheckoutDetails,
   isStripeFinalizationError,
 } from '@/lib/stripeCheckoutValidation'
+import {
+  getCheckoutLifecycleDetails,
+  getDisputeDetails,
+  getRefundDetails,
+} from '@/lib/stripeWebhookEvents'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -68,7 +73,10 @@ export async function POST(req: Request) {
      * - Stripe riceve hold_id
      * - Il webhook trasforma l'hold in prenotazione vera
      */
-    if (event.type === 'checkout.session.completed') {
+    if (
+      event.type === 'checkout.session.completed' ||
+      event.type === 'checkout.session.async_payment_succeeded'
+    ) {
       const session = event.data.object as Stripe.Checkout.Session
       const payment = getPaidCheckoutDetails(session, event.account || null)
 
@@ -91,6 +99,8 @@ export async function POST(req: Request) {
             p_amount_total: payment.amountTotal,
             p_currency: payment.currency,
             p_stripe_connect_account_id: payment.stripeAccountId,
+            p_event_id: event.id,
+            p_event_type: event.type,
           })
           .single()
 
@@ -260,43 +270,145 @@ export async function POST(req: Request) {
      * Se il cliente non paga entro il tempo limite,
      * l'hold diventa expired e lo slot torna libero.
      */
-if (event.type === 'checkout.session.expired') {
-  const session = event.data.object as Stripe.Checkout.Session
+    if (
+      event.type === 'checkout.session.expired' ||
+      event.type === 'checkout.session.async_payment_failed'
+    ) {
+      const session = event.data.object as Stripe.Checkout.Session
+      const details = getCheckoutLifecycleDetails(
+        session,
+        event.account || null,
+      )
 
-  const holdId = session.metadata?.hold_id
-  const tenantId = session.metadata?.tenant_id
-  const metadataStripeAccountId =
-    session.metadata?.stripe_connect_account_id || null
-  const eventStripeAccountId = event.account || null
-
-  if (
-    metadataStripeAccountId &&
-    eventStripeAccountId &&
-    metadataStripeAccountId !== eventStripeAccountId
-  ) {
-    console.warn('Account Stripe Connect non coerente nel webhook expired:', {
-      metadataStripeAccountId,
-      eventStripeAccountId,
-      sessionId: session.id,
-    })
-
-    return NextResponse.json({ received: true })
-  }
-
-  if (holdId && tenantId) {
-        const { error } = await getSupabaseAdmin()
-          .from('service_booking_holds')
-          .update({
-            status: 'expired',
-          })
-          .eq('id', holdId)
-          .eq('tenant_id', tenantId)
-          .eq('status', 'pending')
-
-        if (error) {
-          throw error
-        }
+      if (!details) {
+        console.warn('Evento Checkout Stripe non coerente:', {
+          eventId: event.id,
+          eventType: event.type,
+          sessionId: session.id,
+        })
+        return NextResponse.json({ received: true })
       }
+
+      const { error } = await getSupabaseAdmin().rpc(
+        'process_stripe_booking_event',
+        {
+          p_event_id: event.id,
+          p_event_type: event.type,
+          p_stripe_account_id: details.stripeAccountId,
+          p_object_id: session.id,
+          p_tenant_id: details.tenantId,
+          p_hold_id: details.holdId,
+          p_stripe_session_id: details.sessionId,
+          p_payment_intent_id: null,
+          p_charge_id: null,
+          p_dispute_id: null,
+          p_dispute_status: null,
+          p_amount_refunded: null,
+          p_currency: null,
+        },
+      )
+
+      if (error) throw error
+    }
+
+    if (event.type === 'charge.refunded') {
+      const charge = event.data.object as Stripe.Charge
+      const details = getRefundDetails(charge, event.account || null)
+
+      if (!details) {
+        console.warn('Rimborso Stripe non coerente:', {
+          eventId: event.id,
+          chargeId: charge.id,
+        })
+        return NextResponse.json({ received: true })
+      }
+
+      const { error } = await getSupabaseAdmin().rpc(
+        'process_stripe_booking_event',
+        {
+          p_event_id: event.id,
+          p_event_type: event.type,
+          p_stripe_account_id: details.stripeAccountId,
+          p_object_id: charge.id,
+          p_tenant_id: null,
+          p_hold_id: null,
+          p_stripe_session_id: null,
+          p_payment_intent_id: details.paymentIntentId,
+          p_charge_id: details.chargeId,
+          p_dispute_id: null,
+          p_dispute_status: null,
+          p_amount_refunded: details.amountRefunded,
+          p_currency: details.currency,
+        },
+      )
+
+      if (error) throw error
+    }
+
+    if (
+      event.type === 'charge.dispute.created' ||
+      event.type === 'charge.dispute.closed'
+    ) {
+      const dispute = event.data.object as Stripe.Dispute
+      const details = getDisputeDetails(dispute, event.account || null)
+
+      if (!details) {
+        console.warn('Disputa Stripe non coerente:', {
+          eventId: event.id,
+          disputeId: dispute.id,
+        })
+        return NextResponse.json({ received: true })
+      }
+
+      const { error } = await getSupabaseAdmin().rpc(
+        'process_stripe_booking_event',
+        {
+          p_event_id: event.id,
+          p_event_type: event.type,
+          p_stripe_account_id: details.stripeAccountId,
+          p_object_id: dispute.id,
+          p_tenant_id: null,
+          p_hold_id: null,
+          p_stripe_session_id: null,
+          p_payment_intent_id: details.paymentIntentId,
+          p_charge_id: details.chargeId,
+          p_dispute_id: details.disputeId,
+          p_dispute_status: details.status,
+          p_amount_refunded: null,
+          p_currency: null,
+        },
+      )
+
+      if (error) throw error
+    }
+
+    if (event.type === 'account.updated') {
+      const account = event.data.object as Stripe.Account
+      const eventAccountId = event.account || account.id
+
+      if (eventAccountId !== account.id) {
+        console.warn('Account Connect non coerente:', {
+          eventId: event.id,
+          eventAccountId,
+          accountId: account.id,
+        })
+        return NextResponse.json({ received: true })
+      }
+
+      const { error } = await getSupabaseAdmin().rpc(
+        'process_stripe_connect_event',
+        {
+          p_event_id: event.id,
+          p_stripe_account_id: account.id,
+          p_details_submitted: account.details_submitted ?? false,
+          p_charges_enabled: account.charges_enabled ?? false,
+          p_payouts_enabled: account.payouts_enabled ?? false,
+          p_disabled_reason: account.requirements?.disabled_reason ?? null,
+          p_requirements: account.requirements ?? null,
+        },
+      )
+
+      if (error) throw error
     }
 
     return NextResponse.json({ received: true })

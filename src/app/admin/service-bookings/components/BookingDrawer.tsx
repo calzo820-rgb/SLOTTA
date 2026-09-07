@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { Booking, Service } from '../types'
 import { fmtDate, fmtTime, euro } from '../utils/booking-format'
-import { Badge, statusLabel, payLabel } from './BookingBadges'
+import {
+  Badge,
+  canManuallyTogglePayment,
+  statusLabel,
+  payLabel,
+} from './BookingBadges'
 
 function cleanPhoneForWhatsapp(phone: string) {
   const digits = phone.replace(/\D/g, '')
@@ -252,14 +257,14 @@ async function copyContact() {
           <div className="grid gap-2">
             {booking.status === 'pending' ? (
               <>
-                <button
+                {canManuallyTogglePayment(booking.payment_status) ? <button
                   onClick={async () => {
                     await onUpdateStatus(booking.id, 'confirmed')
                   }}
                   className="w-full rounded-2xl bg-[#1FA7A6] px-4 py-3 text-sm font-black text-white transition hover:bg-[#0F766E]"
                 >
                   Conferma prenotazione
-                </button>
+                </button> : null}
 
                 <button
                   onClick={async () => {
@@ -294,7 +299,8 @@ async function copyContact() {
               </>
             ) : (
               <>
-                {booking.status !== 'cancelled' && (
+                {booking.status !== 'cancelled' &&
+                  canManuallyTogglePayment(booking.payment_status) ? (
                   <button
                     onClick={async () => {
                       await onTogglePaid(booking.id, booking.payment_status)
@@ -305,7 +311,7 @@ async function copyContact() {
                       ? 'Segna NON pagato'
                       : 'Segna pagato'}
                   </button>
-                )}
+                ) : null}
 
                 <button
                   onClick={async () => {

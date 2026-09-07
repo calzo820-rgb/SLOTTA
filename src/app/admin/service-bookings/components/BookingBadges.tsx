@@ -35,5 +35,18 @@ export function statusLabel(s: Booking['status']) {
 
 export function payLabel(p: Booking['payment_status']) {
   if (p === 'paid') return { text: 'Pagato', tone: 'green' as const }
+  if (p === 'pending') return { text: 'In verifica', tone: 'amber' as const }
+  if (p === 'partially_refunded') {
+    return { text: 'Rimborso parziale', tone: 'amber' as const }
+  }
+  if (p === 'refunded') return { text: 'Rimborsato', tone: 'blue' as const }
+  if (p === 'disputed') return { text: 'Contestato', tone: 'red' as const }
+  if (p === 'dispute_lost') {
+    return { text: 'Contestazione persa', tone: 'red' as const }
+  }
   return { text: 'Da pagare', tone: 'orange' as const }
+}
+
+export function canManuallyTogglePayment(p: Booking['payment_status']) {
+  return p === 'paid' || p === 'unpaid'
 }

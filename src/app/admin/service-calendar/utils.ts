@@ -72,12 +72,22 @@ export function statusChip(status: Booking['status']) {
   }
 }
 
-export function paymentChip(paymentStatus?: 'unpaid' | 'paid' | null) {
+export function paymentChip(paymentStatus?: Booking['payment_status'] | null) {
   if (paymentStatus === 'paid') {
     return {
       label: 'Pagato',
       cls: 'bg-green-100 text-green-800 border-green-200',
     }
+  }
+
+  if (paymentStatus === 'partially_refunded') {
+    return { label: 'Rimborso parziale', cls: 'bg-amber-100 text-amber-800 border-amber-200' }
+  }
+  if (paymentStatus === 'refunded') {
+    return { label: 'Rimborsato', cls: 'bg-blue-100 text-blue-800 border-blue-200' }
+  }
+  if (paymentStatus === 'disputed' || paymentStatus === 'dispute_lost') {
+    return { label: 'Contestato', cls: 'bg-red-100 text-red-800 border-red-200' }
   }
 
   return {

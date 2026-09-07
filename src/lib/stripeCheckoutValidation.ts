@@ -63,7 +63,7 @@ export function isStripeFinalizationError(error: unknown) {
   const candidate = error as { message?: unknown; details?: unknown }
   const text = `${String(candidate?.message || '')} ${String(candidate?.details || '')}`
 
-  return /SLOTTA_(INVALID_STRIPE_PAYMENT|STRIPE_PAYMENT_MISMATCH|HOLD_NOT_FOUND|HOLD_NOT_PENDING)/.test(
+  return /SLOTTA_(INVALID_STRIPE_(PAYMENT|EVENT|REFUND|DISPUTE)|STRIPE_PAYMENT_MISMATCH|HOLD_NOT_FOUND|HOLD_NOT_PENDING|BOOKING_NOT_FOUND|TENANT_NOT_FOUND)/.test(
     text,
   )
 }
