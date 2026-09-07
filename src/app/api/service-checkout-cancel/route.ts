@@ -3,6 +3,7 @@ import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 import { isUuid } from '@/lib/bookingRequest'
 import { verifyHoldCancelToken } from '@/lib/holdCancelToken'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -34,7 +35,7 @@ function hasValidCancellation(holdId: string, token: string) {
   )
 }
 
-export async function GET(req: Request) {
+async function handleGet(req: Request) {
   const url = new URL(req.url)
   const origin = url.origin
   const redirectTo = url.searchParams.get('redirect_to') || origin
@@ -52,13 +53,13 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.redirect(safeRedirect)
-  } catch (error) {
-    console.error('service-checkout-cancel error:', error)
+  } catch {
+    logApiEvent('checkout_hold_cancel_redirect_failed', 'error')
     return NextResponse.redirect(safeRedirect)
   }
 }
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   try {
     const limited = await enforceDistributedRateLimit(req, 'service-checkout-cancel', 30, 60_000)
     if (limited) return limited
@@ -79,11 +80,14 @@ export async function POST(req: Request) {
 
     await cancelPendingHold(holdId)
     return NextResponse.json({ ok: true })
-  } catch (error) {
-    console.error('service-checkout-cancel POST error:', error)
+  } catch {
+    logApiEvent('checkout_hold_cancel_failed', 'error')
     return NextResponse.json(
       { error: 'Errore annullamento hold.' },
       { status: 500 },
     )
   }
 }
+
+export const GET = observeApiRoute('/api/service-checkout-cancel', handleGet)
+export const POST = observeApiRoute('/api/service-checkout-cancel', handlePost)

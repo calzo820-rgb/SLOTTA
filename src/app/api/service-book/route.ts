@@ -23,6 +23,7 @@ import {
   createBookingConfirmationToken,
   hashBookingConfirmationToken,
 } from '@/lib/bookingConfirmationToken'
+import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
 function escapeHtml(value: string) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -31,7 +32,7 @@ function escapeHtml(value: string) {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;')
 }
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   try {
     const limited = await enforceDistributedRateLimit(req, 'service-book', 10, 60_000)
     if (limited) return limited
@@ -291,8 +292,8 @@ try {
       </div>
     `,
   })
-} catch (emailErr) {
-  console.error('Errore invio email conferma cliente:', emailErr)
+} catch {
+  logApiEvent('booking_confirmation_email_failed', 'error')
 }
 }
 // 8) Invio notifica push al gestore
@@ -310,8 +311,8 @@ await sendPushNotificationsToTenant(tenant_id, {
   url: '/admin/service-bookings',
   badgeCount: pendingCount ?? 1,
 })
-} catch (pushErr) {
-  console.error('Errore invio notifiche push:', pushErr)
+} catch {
+  logApiEvent('booking_push_notification_failed', 'error')
 }
 
 return NextResponse.json({
@@ -337,7 +338,7 @@ return NextResponse.json({
     }
 
     // Log the raw error for debugging purposes; avoid reading arbitrary properties from unknown
-    console.error('service-book error', e)
+    logApiEvent('service_booking_failed', 'error')
 
     return NextResponse.json(
       {
@@ -349,3 +350,5 @@ return NextResponse.json({
     )
   }
 }
+
+export const POST = observeApiRoute('/api/service-book', handlePost)

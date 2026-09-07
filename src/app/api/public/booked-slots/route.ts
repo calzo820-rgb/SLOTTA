@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { isUuid, isValidBookingDate } from '@/lib/bookingRequest'
 import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
 
 type BusyRow = {
   service_id: string
@@ -15,7 +16,7 @@ type BusyRow = {
   expires_at?: string | null
 }
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   try {
     const limited = await enforceDistributedRateLimit(req, 'booked-slots', 120, 60_000)
     if (limited) return limited
@@ -118,8 +119,8 @@ export async function POST(req: Request) {
         status: row.status,
       })),
     })
-  } catch (e) {
-    console.error('booked-slots error:', e)
+  } catch {
+    logApiEvent('booked_slots_load_failed', 'error')
 
     return NextResponse.json(
       { error: 'Errore caricamento prenotazioni.' },
@@ -127,3 +128,5 @@ export async function POST(req: Request) {
     )
   }
 }
+
+export const POST = observeApiRoute('/api/public/booked-slots', handlePost)
