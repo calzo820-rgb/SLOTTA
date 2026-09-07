@@ -1,7 +1,6 @@
 // src/app/api/service-book/route.ts
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { getResend } from '@/lib/resendClient'
 import { sendPushNotificationsToTenant } from '@/lib/sendPushNotifications'
 import {
   bookingTimeToMinutes,
@@ -24,6 +23,7 @@ import {
   hashBookingConfirmationToken,
 } from '@/lib/bookingConfirmationToken'
 import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
+import { sendTransactionalEmail } from '@/lib/transactionalEmail'
 function escapeHtml(value: string) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -246,7 +246,7 @@ try {
       ? `€ ${(svc.price_cents / 100).toFixed(2)}`
       : '-'
 
-  await getResend().emails.send({
+  await sendTransactionalEmail({
     from,
     to: cleanEmail,
     subject: `Prenotazione ricevuta - ${businessName}`,
@@ -291,7 +291,7 @@ try {
         </p>
       </div>
     `,
-  })
+  }, `booking-received-${inserted.id}`)
 } catch {
   logApiEvent('booking_confirmation_email_failed', 'error')
 }

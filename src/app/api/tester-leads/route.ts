@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { getResend } from '@/lib/resendClient'
 import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { sendTransactionalEmail } from '@/lib/transactionalEmail'
 
 function cleanText(value: unknown, max = 500) {
   return String(value || '').trim().slice(0, max)
@@ -50,7 +50,7 @@ async function notifyTelegram(text: string) {
   }
 }
 
-async function notifyEmail(subject: string, text: string) {
+async function notifyEmail(subject: string, text: string, leadId: string) {
   const to = process.env.LEADS_NOTIFY_EMAIL
   const from = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
@@ -60,21 +60,14 @@ async function notifyEmail(subject: string, text: string) {
   }
 
   try {
-    const result = await getResend().emails.send({
+    await sendTransactionalEmail({
       from,
       to,
       subject,
       text,
-    })
-
- if (result.error) {
-  console.error('Errore invio email Resend:', result.error)
-  return
-}
-
-console.log('Email inviata con Resend:', result.data)
-  } catch (error) {
-    console.error('Errore invio email Resend:', error)
+    }, `tester-lead-${leadId}`)
+  } catch {
+    console.error(JSON.stringify({ level: 'error', event: 'tester_lead_email_failed' }))
   }
 }
 
@@ -167,7 +160,7 @@ export async function POST(req: Request) {
 
     await Promise.all([
       notifyTelegram(notificationText),
-      notifyEmail(`Nuovo tester Slotta: ${salonName}`, notificationText),
+      notifyEmail(`Nuovo tester Slotta: ${salonName}`, notificationText, data.id),
     ])
 
     return NextResponse.json({ ok: true, id: data.id }, { status: 200 })
