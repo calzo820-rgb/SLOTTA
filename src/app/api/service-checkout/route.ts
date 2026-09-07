@@ -18,6 +18,11 @@ import {
   BookingAvailabilityError,
   loadBookingAvailability,
 } from '@/lib/serverBookingAvailability'
+import {
+  bookingConfirmationExpiry,
+  createBookingConfirmationToken,
+  hashBookingConfirmationToken,
+} from '@/lib/bookingConfirmationToken'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -322,6 +327,8 @@ try {
     // 8. Crea hold temporaneo.
     // Lo slot resta riservato mentre il cliente è su Stripe.
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000)
+    const confirmationToken = createBookingConfirmationToken()
+    const confirmationExpiresAt = bookingConfirmationExpiry()
 
     const { data: hold, error: holdErr } = await getSupabaseAdmin()
       .from('service_booking_holds')
@@ -343,6 +350,8 @@ try {
         expected_amount_cents: priceCents,
         expected_currency: 'eur',
         stripe_connect_account_id: stripeAccountId,
+        confirmation_token_hash: hashBookingConfirmationToken(confirmationToken),
+        confirmation_token_expires_at: confirmationExpiresAt.toISOString(),
       })
       .select('id')
       .single()
@@ -357,7 +366,14 @@ try {
       stripeSecret,
     )
 
-    // 9. Cancel URL sicuro: se il cliente annulla, marchiamo l'hold come cancelled.
+    // 9. URL di ritorno sicuri. Il token pubblico consente di leggere soltanto
+    // questa conferma e sostituisce sia l'ID interno sia l'ID sessione Stripe.
+    const safeSuccessUrl = new URL(success_url)
+    safeSuccessUrl.searchParams.delete('booking')
+    safeSuccessUrl.searchParams.delete('session_id')
+    safeSuccessUrl.searchParams.set('confirmation_token', confirmationToken)
+
+    // Se il cliente annulla, marchiamo l'hold come cancelled.
     const safeCancelUrl = new URL('/api/service-checkout-cancel', origin)
     safeCancelUrl.searchParams.set('hold_id', hold.id)
     safeCancelUrl.searchParams.set('cancel_token', holdCancelToken)
@@ -368,7 +384,7 @@ try {
     const session = await stripe.checkout.sessions.create(
       {
         mode: 'payment',
-        success_url,
+        success_url: safeSuccessUrl.toString(),
         cancel_url: safeCancelUrl.toString(),
         customer_email: customer_email || undefined,
 
