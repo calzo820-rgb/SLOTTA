@@ -208,7 +208,7 @@ export function BookingsTable({
                   <div className="flex flex-wrap justify-end gap-2">
                     {b.status === 'pending' ? (
                       <>
-                        {canManuallyTogglePayment(b.payment_status) ? <button
+                        <button
                           type="button"
                           onClick={e => {
                             e.stopPropagation()
@@ -217,7 +217,7 @@ export function BookingsTable({
                           className="inline-flex h-11 w-[110px] items-center justify-center rounded-2xl border border-[#1FA7A6]/30 bg-[#E6FFFA] px-3 text-sm font-bold text-[#0F766E] transition hover:bg-[#CCFBF1]"
                         >
                           Conferma
-                        </button> : null}
+                        </button>
 
                         <button
                           type="button"
@@ -232,18 +232,20 @@ export function BookingsTable({
                       </>
                     ) : b.status === 'confirmed' ? (
                       <>
-                        <button
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation()
-                            onTogglePaid(b.id, b.payment_status)
-                          }}
-                          className="inline-flex h-11 w-[130px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-[#1FA7A6] hover:text-[#1FA7A6]"
-                        >
-                          {b.payment_status === 'paid'
-                            ? 'Non pagato'
-                            : 'Segna pagato'}
-                        </button>
+                        {canManuallyTogglePayment(b.payment_status) ? (
+                          <button
+                            type="button"
+                            onClick={e => {
+                              e.stopPropagation()
+                              onTogglePaid(b.id, b.payment_status)
+                            }}
+                            className="inline-flex h-11 w-[130px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-[#1FA7A6] hover:text-[#1FA7A6]"
+                          >
+                            {b.payment_status === 'paid'
+                              ? 'Non pagato'
+                              : 'Segna pagato'}
+                          </button>
+                        ) : null}
 
                         <button
                           type="button"
