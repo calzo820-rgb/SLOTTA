@@ -18,6 +18,11 @@ import {
   BookingAvailabilityError,
   loadBookingAvailability,
 } from '@/lib/serverBookingAvailability'
+import {
+  bookingConfirmationExpiry,
+  createBookingConfirmationToken,
+  hashBookingConfirmationToken,
+} from '@/lib/bookingConfirmationToken'
 function escapeHtml(value: string) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -184,6 +189,9 @@ if (!isStaffFree(final_staff_id)) {
 
     }
 
+    const confirmationToken = createBookingConfirmationToken()
+    const confirmationExpiresAt = bookingConfirmationExpiry()
+
     // 6) insert booking (sempre con staff_id assegnato)
     const { data: inserted, error: insErr } = await getSupabaseAdmin()
       .from('service_bookings')
@@ -200,6 +208,8 @@ customer_phone: cleanPhone,
         status: 'pending',
         payment_status: 'unpaid',
         checkout_pending: false,
+        confirmation_token_hash: hashBookingConfirmationToken(confirmationToken),
+        confirmation_token_expires_at: confirmationExpiresAt.toISOString(),
       })
       .select('id, staff_id')
       .single()
@@ -304,7 +314,11 @@ await sendPushNotificationsToTenant(tenant_id, {
   console.error('Errore invio notifiche push:', pushErr)
 }
 
-return NextResponse.json({ booking_id: inserted.id, staff_id: inserted.staff_id })
+return NextResponse.json({
+  booking_id: inserted.id,
+  staff_id: inserted.staff_id,
+  confirmation_token: confirmationToken,
+})
   } catch (e: unknown) {
     // Generate a simple request ID to help trace errors in logs
     const requestId =

@@ -27,7 +27,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **PAY-02 — Verificare lo stato economico del pagamento.** Controlli su `payment_status`, modalità, importo, valuta, PaymentIntent, tenant e account Connect pubblicati e verificati.
 - [x] **PAY-03 — Gestire tutti gli eventi Stripe rilevanti.** Pagamento asincrono riuscito/fallito, scadenza sessione, rimborso, disputa e account Connect disabilitato pubblicati con registro eventi idempotente; migrazione, privilegi, test transazionale e produzione verificati.
 - [ ] **PAY-04 — Collaudo Stripe Connect reale.** Eseguire in produzione pagamento, annullamento, sessione abbandonata, rimborso e verifica accredito sul conto collegato. Richiede intervento manuale del titolare.
-- [ ] **DATA-01 — Proteggere la pagina di conferma prenotazione.** Evitare che un semplice ID nella URL consenta di visualizzare nome, email e dettagli: usare un token pubblico dedicato, limitato e revocabile.
+- [-] **DATA-01 — Proteggere la pagina di conferma prenotazione.** Token casuale dedicato con solo hash nel database, scadenza e revoca implementati per prenotazioni dirette e Stripe; in attesa di PR, migrazione e test transazionale.
 - [ ] **DATA-02 — Cancellazione account e politica di conservazione.** L'esportazione esiste; aggiungere richiesta/cancellazione completa del tenant, tempi di retention per prenotazioni e lead e procedura di revoca sessioni.
 - [ ] **DATA-03 — Backup e prova di ripristino.** Documentare backup, export fuori piattaforma e ripristino; eseguire almeno una prova su ambiente non produttivo.
 
@@ -59,7 +59,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **BASE-07 — RLS staff:** scritture sugli operatori riservate al proprietario.
 - [x] **BASE-08 — Concorrenza prenotazioni:** guardia atomica database tra booking e hold Stripe, con test transazionale e rollback.
 - [x] **BASE-09 — Dipendenze:** audit npm del 6 settembre 2026 con 0 vulnerabilità note.
-- [x] **BASE-10 — Qualità corrente:** 42 test automatici pubblicati, lint e build puliti.
+- [x] **BASE-10 — Qualità corrente:** 42 test automatici pubblicati; la tranche DATA-01 porta la suite locale a 45, con lint e build puliti.
 - [x] **BASE-11 — Produzione corrente:** deploy Vercel `READY`, endpoint health operativo e nessun errore runtime nelle ultime 24 ore al momento dell'audit.
 
 ## Limitazioni note del piano gratuito

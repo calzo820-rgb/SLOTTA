@@ -58,6 +58,7 @@ type CheckoutData = {
 // either a `booking_id` on success or an error message on failure.
 type BookData = {
   booking_id?: string
+  confirmation_token?: string
   error?: string
 }
 import { MobileStepBar } from './service-booking/MobileStepBar'
@@ -564,7 +565,7 @@ async function submitBooking() {
 
   const base = window.location.origin
 
-      const successUrl = `${base}/t/${tenant.slug}/success?status=success&session_id={CHECKOUT_SESSION_ID}`
+      const successUrl = `${base}/t/${tenant.slug}/success?status=success`
 
       const cancelUrl = `${base}/t/${tenant.slug}?status=cancel&service=${selectedService.id}&date=${date}&time=${selectedTime}&staff=${selectedStaffId}`
 
@@ -641,7 +642,7 @@ if (checkoutData?.hold_id && checkoutData?.hold_cancel_token) {
       .json()
       .catch(() => ({} as BookData))
 
-    if (!resBook.ok || !bookData?.booking_id) {
+    if (!resBook.ok || !bookData?.confirmation_token) {
       const msg = bookData?.error || 'Errore nella creazione della prenotazione.'
 
       if (
@@ -666,9 +667,10 @@ if (checkoutData?.hold_id && checkoutData?.hold_cancel_token) {
       throw new Error(msg)
     }
 
-    const bookingId = bookData.booking_id as string
-
-    router.push(`/t/${tenant.slug}/success?booking=${bookingId}`)
+    const confirmationToken = bookData.confirmation_token
+    router.push(
+      `/t/${tenant.slug}/success?confirmation_token=${encodeURIComponent(confirmationToken)}`,
+    )
   } catch (e: unknown) {
     console.error(e)
     const message =

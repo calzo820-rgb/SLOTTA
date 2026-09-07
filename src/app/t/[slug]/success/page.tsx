@@ -1,11 +1,14 @@
 import Link from 'next/link'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import {
+  hashBookingConfirmationToken,
+  isValidBookingConfirmationToken,
+} from '@/lib/bookingConfirmationToken'
 type Props = {
   params: Promise<{ slug: string }>
   searchParams: Promise<{
-  booking?: string
+  confirmation_token?: string
   status?: string
-  session_id?: string
 }>
 }
 
@@ -80,8 +83,7 @@ export default async function BookingSuccessPage({
   const { slug } = await params
   const sp = await searchParams
 
-  const bookingId = sp.booking || ''
-  const sessionId = sp.session_id || ''
+  const confirmationToken = sp.confirmation_token || ''
 
   const { data: tenant } = await getSupabaseAdmin()
     .from('tenants')
@@ -92,14 +94,17 @@ export default async function BookingSuccessPage({
   let booking: BookingRow | null = null
   let service: ServiceRow | null = null
 
-  if (bookingId) {
+  if (isValidBookingConfirmationToken(confirmationToken)) {
+    const confirmationHash = hashBookingConfirmationToken(confirmationToken)
     const { data: bookingRow } = await getSupabaseAdmin()
       .from('service_bookings')
       .select(
         'id, service_id, customer_name, customer_email, booking_date, booking_time, status, payment_status',
       )
-      .eq('id', bookingId)
+      .eq('confirmation_token_hash', confirmationHash)
       .eq('tenant_id', tenant?.id || '')
+      .is('confirmation_token_revoked_at', null)
+      .gt('confirmation_token_expires_at', new Date().toISOString())
       .maybeSingle()
 
     booking = bookingRow as BookingRow | null
@@ -113,18 +118,20 @@ export default async function BookingSuccessPage({
 
       service = serviceRow as ServiceRow | null
     }
-  }
-if (!booking && sessionId) {
-  const { data: bookingRow } = await getSupabaseAdmin()
-    .from('service_bookings')
+    if (!booking) {
+      const { data: holdRow } = await getSupabaseAdmin()
+        .from('service_booking_holds')
     .select(
-      'id, service_id, customer_name, customer_email, booking_date, booking_time, status, payment_status',
+      'id, service_id, customer_name, customer_email, booking_date, booking_time, status',
     )
-    .eq('stripe_session_id', sessionId)
+        .eq('confirmation_token_hash', confirmationHash)
     .eq('tenant_id', tenant?.id || '')
+        .is('confirmation_token_revoked_at', null)
+        .gt('confirmation_token_expires_at', new Date().toISOString())
     .maybeSingle()
 
-  booking = bookingRow as BookingRow | null
+      booking = holdRow as BookingRow | null
+    }
 
   if (booking?.service_id) {
     const { data: serviceRow } = await getSupabaseAdmin()
@@ -135,7 +142,31 @@ if (!booking && sessionId) {
 
     service = serviceRow as ServiceRow | null
   }
-}
+  }
+
+  if (!booking) {
+    return (
+      <main className="min-h-screen bg-[#F2F4F7] px-4 py-8 text-[#0F1D2D]">
+        <section className="mx-auto max-w-xl rounded-[2rem] border border-slate-200 bg-white p-6 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-2xl font-black text-amber-900">
+            !
+          </div>
+          <h1 className="text-2xl font-black">Conferma non disponibile</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Il link non è valido, è scaduto oppure è stato revocato. Contatta
+            direttamente l’attività se hai bisogno dei dettagli della prenotazione.
+          </p>
+          <Link
+            href={`/t/${slug}`}
+            className="mt-6 block rounded-2xl bg-[#FFC145] px-5 py-3 text-sm font-black text-[#0F1D2D]"
+          >
+            Torna alla pagina prenotazioni
+          </Link>
+        </section>
+      </main>
+    )
+  }
+
   const isPaid = booking?.payment_status === 'paid'
   const isConfirmed = booking?.status === 'confirmed'
   const isCancelled = booking?.status === 'cancelled'
