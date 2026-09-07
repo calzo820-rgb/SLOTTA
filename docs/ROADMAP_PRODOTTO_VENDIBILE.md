@@ -19,6 +19,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **SEC-05 — Rendere distribuito il rate limiting.** Store atomico condiviso Supabase implementato e verificato in produzione per tutte le API pubbliche applicative (prenotazioni, disponibilità, checkout, annullamenti, onboarding e form tester); il login resta protetto dai limiti nativi di Supabase Auth.
 - [x] **SEC-06 — Chiudere gli advisor `SECURITY DEFINER`.** Helper RLS spostati nello schema privato con permessi minimi; 24 policy preservate, test autenticato e advisor verificati in produzione.
 - [x] **SEC-07 — Test automatici di isolamento multi-tenant.** Test transazionale pubblicato e superato con ruoli `anon`, proprietario e staff; verifica privilegi, letture tra tenant e scritture riservate.
+- [-] **SEC-08 — Validare le disponibilità lato server.** Regole centralizzate per tenant e servizi attivi, anticipo minimo, orari del salone e degli operatori, chiusure e operatore richiesto; test automatici superati. In attesa di PR e verifica in preview.
 
 ## P1 — integrità di pagamenti e dati
 
@@ -32,7 +33,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 
 ## P1 — affidabilità operativa
 
-- [-] **OPS-01 — Rendere la build indipendente dall'inizializzazione delle credenziali.** Inizializzazione lazy e validazione esplicita applicate ai client Supabase e Resend; build senza credenziali e test automatici superati. In attesa di PR e verifica della preview.
+- [x] **OPS-01 — Rendere la build indipendente dall'inizializzazione delle credenziali.** Inizializzazione lazy e validazione esplicita applicate ai client Supabase e Resend; build senza credenziali, test, preview e produzione verificati.
 - [ ] **OPS-02 — Logging strutturato e codici richiesta.** Uniformare i log delle API senza dati personali, aggiungere `requestId`, durata, route e codici errore pubblici stabili.
 - [ ] **OPS-03 — Monitoraggio automatico e allarmi.** Aggiungere error tracking/uptime per home, health, prenotazione e webhook; su piano gratuito mantenere anche una procedura di controllo Vercel.
 - [ ] **OPS-04 — Test end-to-end.** Automatizzare i flussi cliente, proprietario e staff, inclusi prenotazione, conflitto, autorizzazioni, email simulata e webhook Stripe firmato.

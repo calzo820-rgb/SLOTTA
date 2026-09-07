@@ -6,6 +6,26 @@ export type Slot = {
   reason?: SlotReason
 }
 
+export type AvailabilityHours = {
+  is_closed?: boolean | null
+  open_time_am?: string | null
+  close_time_am?: string | null
+  pm_enabled?: boolean | null
+  has_split?: boolean | null
+  open_time_pm?: string | null
+  close_time_pm?: string | null
+  open_time?: string | null
+  close_time?: string | null
+}
+
+export type AvailabilityClosure = {
+  staff_id: string | null
+  closure_type: string
+  all_day: boolean
+  start_time: string | null
+  end_time: string | null
+}
+
 export function timeStrToMinutes(s: string): number {
   const parts = String(s || '').split(':')
   const h = parseInt(parts[0] || '0', 10)
@@ -118,6 +138,94 @@ export function buildSegments(params: {
   }
 
   return segments
+}
+
+function overlaps(
+  start: number,
+  end: number,
+  otherStart: number,
+  otherEnd: number,
+) {
+  return start < otherEnd && end > otherStart
+}
+
+function fitsInsideSegment(
+  start: number,
+  end: number,
+  segments: Array<{ start: number; end: number }>,
+) {
+  return segments.some(segment => start >= segment.start && end <= segment.end)
+}
+
+function closureBlocks(
+  closure: AvailabilityClosure,
+  start: number,
+  end: number,
+) {
+  const closureStart = closure.all_day
+    ? 0
+    : timeStrToMinutes(closure.start_time || '00:00')
+  const closureEnd = closure.all_day
+    ? 24 * 60
+    : timeStrToMinutes(closure.end_time || '23:59')
+  return overlaps(start, end, closureStart, closureEnd)
+}
+
+export function isWindowWithinTenantAvailability(params: {
+  tenantHours: AvailabilityHours | null
+  closures: AvailabilityClosure[]
+  start: number
+  end: number
+}) {
+  const { tenantHours, closures, start, end } = params
+  if (!tenantHours || tenantHours.is_closed) return false
+
+  const tenantSegments = buildSegments({
+    selectedStaffId: 'any',
+    tenantHours,
+  })
+  if (!fitsInsideSegment(start, end, tenantSegments)) return false
+
+  return !closures.some(
+    closure =>
+      closure.closure_type === 'salon' && closureBlocks(closure, start, end),
+  )
+}
+
+export function eligibleStaffForWindow(params: {
+  staff: Array<{ id: string; position: number }>
+  staffHours: Array<AvailabilityHours & { staff_id: string; dow: number }>
+  closures: AvailabilityClosure[]
+  dow: number
+  start: number
+  end: number
+  requestedStaffId: string | null
+}) {
+  const { staff, staffHours, closures, dow, start, end, requestedStaffId } =
+    params
+
+  return staff.filter(member => {
+    if (requestedStaffId && member.id !== requestedStaffId) return false
+
+    const hours = staffHours.find(
+      row => row.staff_id === member.id && row.dow === dow,
+    )
+    if (!hours || hours.is_closed) return false
+
+    const segments = buildSegments({
+      selectedStaffId: member.id,
+      tenantHours: {},
+      selectedStaffHours: hours,
+    })
+    if (!fitsInsideSegment(start, end, segments)) return false
+
+    return !closures.some(
+      closure =>
+        closure.closure_type === 'staff' &&
+        closure.staff_id === member.id &&
+        closureBlocks(closure, start, end),
+    )
+  })
 }
 
 export function buildSlots(params: {

@@ -4,7 +4,6 @@ import Stripe from 'stripe'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import {
   bookingTimeToMinutes,
-  getNowInTimeZone,
   hasValidBookingCustomer,
   isValidBookingDate,
   isUuid,
@@ -15,6 +14,10 @@ import {
   staffBusyResponseBody,
 } from '@/lib/bookingConflict'
 import { createHoldCancelToken } from '@/lib/holdCancelToken'
+import {
+  BookingAvailabilityError,
+  loadBookingAvailability,
+} from '@/lib/serverBookingAvailability'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -121,6 +124,7 @@ export async function POST(req: Request) {
       `,
       )
       .eq('id', tenant_id)
+      .eq('is_active', true)
       .maybeSingle()
 
     if (tenantErr) throw tenantErr
@@ -149,64 +153,18 @@ export async function POST(req: Request) {
     }
 
   
-    // 1. Settings tenant
-    const { data: st, error: stErr } = await getSupabaseAdmin()
-      .from('tenant_settings')
-      .select('staff_assign_mode, staff_rr_cursor, lead_minutes, timezone')
-      .eq('tenant_id', tenant_id)
-      .maybeSingle()
-
-    if (stErr) throw stErr
-
-    const staff_assign_mode = (st?.staff_assign_mode || 'first_free') as
-      | 'first_free'
-      | 'round_robin'
-
-    const rr_cursor = Number(st?.staff_rr_cursor || 0)
-
-    const leadMinutes =
-      typeof st?.lead_minutes === 'number' && st.lead_minutes >= 0
-        ? st.lead_minutes
-        : 30
-
-    // 2. Blocca date/orari passati o troppo vicini
-    const { date: todayStr, minutes: nowMinutes } = getNowInTimeZone(
-      st?.timezone || 'Europe/Rome',
-    )
-
-    if (booking_date < todayStr) {
-      return NextResponse.json(
-        { error: 'Non puoi prenotare in una data passata.' },
-        { status: 400 },
-      )
-    }
-
-    if (booking_date === todayStr && bookingMinutes < nowMinutes + leadMinutes) {
-      return NextResponse.json(
-        { error: 'Questo orario non è più prenotabile.' },
-        { status: 400 },
-      )
-    }
-
-    // 3. Servizio
-    const { data: svc, error: svcErr } = await getSupabaseAdmin()
-      .from('services')
-      .select('id, name, duration_minutes, price_cents')
-      .eq('tenant_id', tenant_id)
-      .eq('id', service_id)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    if (svcErr) throw svcErr
-
-    if (!svc) {
-      return NextResponse.json(
-        { error: 'Servizio non trovato.' },
-        { status: 404 },
-      )
-    }
-
-    const duration = Number(svc.duration_minutes || 60)
+    const availability = await loadBookingAvailability({
+      tenantId: tenant_id,
+      serviceId: service_id,
+      bookingDate: booking_date,
+      bookingMinutes,
+      requestedStaffId: requested_staff_id,
+    })
+    const svc = availability.service
+    const staff = availability.staff
+    const duration = availability.duration
+    const staff_assign_mode = availability.settings.staffAssignMode
+    const rr_cursor = availability.settings.roundRobinCursor
     const priceCents = Number(svc.price_cents || 0)
 
     if (!priceCents || priceCents <= 0) {
@@ -214,36 +172,6 @@ export async function POST(req: Request) {
         { error: 'Il servizio non ha un prezzo valido per il pagamento online.' },
         { status: 400 },
       )
-    }
-
-    // 4. Staff attivo
-    const { data: staffRows, error: staffErr } = await getSupabaseAdmin()
-      .from('staff_members')
-      .select('id, position')
-      .eq('tenant_id', tenant_id)
-      .eq('is_active', true)
-      .order('position', { ascending: true })
-
-    if (staffErr) throw staffErr
-
-    const staff = staffRows || []
-
-    if (!staff.length) {
-      return NextResponse.json(
-        { error: 'Nessun operatore attivo configurato.' },
-        { status: 400 },
-      )
-    }
-
-    if (requested_staff_id) {
-      const ok = staff.some(s => s.id === requested_staff_id)
-
-      if (!ok) {
-        return NextResponse.json(
-          { error: 'Operatore non valido o non attivo.' },
-          { status: 400 },
-        )
-      }
     }
 
     // 5. Prenotazioni reali del giorno
@@ -496,6 +424,12 @@ try {
 
     if (isStaffOverlapError(e)) {
       return NextResponse.json(staffBusyResponseBody(), { status: 409 })
+    }
+    if (e instanceof BookingAvailabilityError) {
+      return NextResponse.json(
+        { error_code: e.code, error: e.message },
+        { status: e.status },
+      )
     }
 
     console.error('service-checkout error:', e)
