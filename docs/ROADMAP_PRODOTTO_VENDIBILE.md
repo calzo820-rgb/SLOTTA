@@ -1,6 +1,6 @@
 # Slotta — checklist per un prodotto vendibile
 
-Ultimo audit tecnico: 6 settembre 2026.
+Ultimo audit tecnico: 7 settembre 2026.
 
 ## Regole di avanzamento
 
@@ -16,9 +16,9 @@ Ultimo audit tecnico: 6 settembre 2026.
 - [x] **SEC-02 — Bloccare gli inserimenti anonimi diretti nelle prenotazioni.** Le prenotazioni pubbliche passano esclusivamente dalle API server con validazione, disponibilità e antiabuso.
 - [x] **SEC-03 — Applicare privilegi SQL minimi.** Revocati ad `anon` tutti i privilegi diretti sulle tabelle e rimossi da `authenticated` i privilegi e gli accessi non necessari.
 - [x] **SEC-04 — Proteggere l'annullamento degli hold Stripe.** Token firmato e a scadenza, validazione UUID, limite del body e rate limiting verificati in produzione.
-- [-] **SEC-05 — Rendere distribuito il rate limiting.** Store atomico condiviso Supabase implementato per tutte le API pubbliche applicative (prenotazioni, disponibilità, checkout, annullamenti, onboarding e form tester); il login resta protetto dai limiti nativi di Supabase Auth. In attesa di migrazione e verifica post-deploy.
+- [x] **SEC-05 — Rendere distribuito il rate limiting.** Store atomico condiviso Supabase implementato e verificato in produzione per tutte le API pubbliche applicative (prenotazioni, disponibilità, checkout, annullamenti, onboarding e form tester); il login resta protetto dai limiti nativi di Supabase Auth.
 - [x] **SEC-06 — Chiudere gli advisor `SECURITY DEFINER`.** Helper RLS spostati nello schema privato con permessi minimi; 24 policy preservate, test autenticato e advisor verificati in produzione.
-- [ ] **SEC-07 — Test automatici di isolamento multi-tenant.** Provare con ruoli `anon`, proprietario e staff che un salone non possa leggere o modificare dati, prenotazioni, operatori o configurazioni di un altro salone.
+- [-] **SEC-07 — Test automatici di isolamento multi-tenant.** Test transazionale implementato e superato con ruoli `anon`, proprietario e staff; verifica privilegi, letture tra tenant e scritture riservate. In attesa di PR e controllo CI.
 
 ## P1 — integrità di pagamenti e dati
 
