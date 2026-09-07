@@ -1,7 +1,7 @@
 // src/app/api/service-checkout/route.ts
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import {
   bookingTimeToMinutes,
   getNowInTimeZone,
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
     }
 
         // Controllo Stripe Connect del salone
-    const { data: tenant, error: tenantErr } = await supabaseAdmin
+    const { data: tenant, error: tenantErr } = await getSupabaseAdmin()
       .from('tenants')
       .select(
         `
@@ -150,7 +150,7 @@ export async function POST(req: Request) {
 
   
     // 1. Settings tenant
-    const { data: st, error: stErr } = await supabaseAdmin
+    const { data: st, error: stErr } = await getSupabaseAdmin()
       .from('tenant_settings')
       .select('staff_assign_mode, staff_rr_cursor, lead_minutes, timezone')
       .eq('tenant_id', tenant_id)
@@ -189,7 +189,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Servizio
-    const { data: svc, error: svcErr } = await supabaseAdmin
+    const { data: svc, error: svcErr } = await getSupabaseAdmin()
       .from('services')
       .select('id, name, duration_minutes, price_cents')
       .eq('tenant_id', tenant_id)
@@ -217,7 +217,7 @@ export async function POST(req: Request) {
     }
 
     // 4. Staff attivo
-    const { data: staffRows, error: staffErr } = await supabaseAdmin
+    const { data: staffRows, error: staffErr } = await getSupabaseAdmin()
       .from('staff_members')
       .select('id, position')
       .eq('tenant_id', tenant_id)
@@ -247,7 +247,7 @@ export async function POST(req: Request) {
     }
 
     // 5. Prenotazioni reali del giorno
-   const { data: dayBookings, error: bErr } = await supabaseAdmin
+   const { data: dayBookings, error: bErr } = await getSupabaseAdmin()
   .from('service_bookings')
   .select('staff_id, booking_time, service_id, status, checkout_pending')
   .eq('tenant_id', tenant_id)
@@ -259,7 +259,7 @@ export async function POST(req: Request) {
 // Così eventuali tentativi Stripe abbandonati non bloccano più gli slot.
 // Se la pulizia fallisce, non blocchiamo il checkout: logghiamo e proseguiamo.
 try {
-  const { error: cleanupHoldsErr } = await supabaseAdmin
+  const { error: cleanupHoldsErr } = await getSupabaseAdmin()
     .from('service_booking_holds')
     .update({ status: 'expired' })
     .eq('tenant_id', tenant_id)
@@ -273,7 +273,7 @@ try {
   console.warn('Errore pulizia hold scaduti:', cleanupHoldsErr)
 }
     // 6. Hold Stripe attivi del giorno
-    const { data: activeHolds, error: hErr } = await supabaseAdmin
+    const { data: activeHolds, error: hErr } = await getSupabaseAdmin()
       .from('service_booking_holds')
       .select('staff_id, booking_time, service_id, status, expires_at')
       .eq('tenant_id', tenant_id)
@@ -298,7 +298,7 @@ try {
       ),
     )
 
-    const { data: svcsDur, error: sdErr } = await supabaseAdmin
+    const { data: svcsDur, error: sdErr } = await getSupabaseAdmin()
       .from('services')
       .select('id, duration_minutes')
       .eq('tenant_id', tenant_id)
@@ -361,7 +361,7 @@ try {
 
         final_staff_id = picked
 
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from('tenant_settings')
           .upsert(
             { tenant_id, staff_rr_cursor: rr_cursor + 1 },
@@ -395,7 +395,7 @@ try {
     // Lo slot resta riservato mentre il cliente è su Stripe.
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000)
 
-    const { data: hold, error: holdErr } = await supabaseAdmin
+    const { data: hold, error: holdErr } = await getSupabaseAdmin()
       .from('service_booking_holds')
       .insert({
         tenant_id,
@@ -469,7 +469,7 @@ try {
       },
     )
 
-    const { error: updateHoldErr } = await supabaseAdmin
+    const { error: updateHoldErr } = await getSupabaseAdmin()
       .from('service_booking_holds')
       .update({
         stripe_session_id: session.id,
@@ -487,7 +487,7 @@ try {
     })
   } catch (e: unknown) {
     if (createdHoldId) {
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('service_booking_holds')
         .update({ status: 'cancelled' })
         .eq('id', createdHoldId)

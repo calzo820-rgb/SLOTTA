@@ -1,5 +1,5 @@
 import webpush from 'web-push'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 type PushPayload = {
   title: string
@@ -51,7 +51,7 @@ export async function sendPushNotificationsToTenant(
     return
   }
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('push_subscriptions')
     .select('id, tenant_id, endpoint, p256dh, auth')
     .eq('tenant_id', tenantId)
@@ -97,7 +97,7 @@ tag: 'slotta-new-booking',
         const errorWithStatus = err as { statusCode?: number }
         const statusCode = errorWithStatus?.statusCode
         if (statusCode === 404 || statusCode === 410) {
-          await supabaseAdmin
+          await getSupabaseAdmin()
             .from('push_subscriptions')
             .delete()
             .eq('id', sub.id)

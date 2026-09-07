@@ -1,7 +1,7 @@
 // src/app/api/service-book/route.ts
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { resend } from '@/lib/resendClient'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { getResend } from '@/lib/resendClient'
 import { sendPushNotificationsToTenant } from '@/lib/sendPushNotifications'
 import {
   bookingTimeToMinutes,
@@ -73,7 +73,7 @@ if (!hasValidBookingCustomer({ name: customer_name, email: cleanEmail, phone: cl
   return NextResponse.json({ error: 'Dati cliente non validi o troppo lunghi.' }, { status: 400 })
 }
     // 1) leggo settings
-const { data: st, error: stErr } = await supabaseAdmin
+const { data: st, error: stErr } = await getSupabaseAdmin()
   .from('tenant_settings')
   .select('staff_assign_mode, staff_rr_cursor, lead_minutes, timezone')
   .eq('tenant_id', tenant_id)
@@ -112,7 +112,7 @@ if (booking_date === todayStr && bookingMinutes < nowMinutes + leadMinutes) {
   )
 }
     // 2) durata servizio
-    const { data: svc, error: svcErr } = await supabaseAdmin
+    const { data: svc, error: svcErr } = await getSupabaseAdmin()
   .from('services')
   .select('name, duration_minutes, price_cents')
   .eq('tenant_id', tenant_id)
@@ -127,7 +127,7 @@ if (booking_date === todayStr && bookingMinutes < nowMinutes + leadMinutes) {
     const duration = Number(svc.duration_minutes || 60)
 
     // 3) staff attivo
-    const { data: staffRows, error: staffErr } = await supabaseAdmin
+    const { data: staffRows, error: staffErr } = await getSupabaseAdmin()
       .from('staff_members')
       .select('id, position')
       .eq('tenant_id', tenant_id)
@@ -151,7 +151,7 @@ if (booking_date === todayStr && bookingMinutes < nowMinutes + leadMinutes) {
 
     // 4) prendo tutte le prenotazioni di quel giorno (per calcolare overlap per operatore)
     // NB: consideriamo solo prenotazioni non cancellate
-    const { data: dayBookings, error: bErr } = await supabaseAdmin
+    const { data: dayBookings, error: bErr } = await getSupabaseAdmin()
       .from('service_bookings')
       .select('staff_id, booking_time, service_id, status')
       .eq('tenant_id', tenant_id)
@@ -162,7 +162,7 @@ if (booking_date === todayStr && bookingMinutes < nowMinutes + leadMinutes) {
 
     // mappa durata per service_id presenti quel giorno
     const serviceIds = Array.from(new Set((dayBookings || []).map(b => b.service_id).filter(Boolean)))
-    const { data: svcsDur, error: sdErr } = await supabaseAdmin
+    const { data: svcsDur, error: sdErr } = await getSupabaseAdmin()
       .from('services')
       .select('id, duration_minutes')
       .eq('tenant_id', tenant_id)
@@ -220,7 +220,7 @@ if (booking_date === todayStr && bookingMinutes < nowMinutes + leadMinutes) {
         final_staff_id = picked
 
         // aggiorno cursor (cursor + 1) — onConflict tenant_id
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from('tenant_settings')
           .upsert({ tenant_id, staff_rr_cursor: rr_cursor + 1 }, { onConflict: 'tenant_id' })
       } else {
@@ -246,7 +246,7 @@ if (!isStaffFree(final_staff_id)) {
     }
 
     // 6) insert booking (sempre con staff_id assegnato)
-    const { data: inserted, error: insErr } = await supabaseAdmin
+    const { data: inserted, error: insErr } = await getSupabaseAdmin()
       .from('service_bookings')
       .insert({
         tenant_id,
@@ -272,14 +272,14 @@ customer_phone: cleanPhone,
 // L'email NON deve bloccare la prenotazione: se fallisce, la prenotazione resta valida.
 if (cleanEmail) {
 try {
-  const { data: tenant } = await supabaseAdmin
+  const { data: tenant } = await getSupabaseAdmin()
     .from('tenants')
     .select('name')
     .eq('id', tenant_id)
     .maybeSingle()
 
   const { data: staffMember } = final_staff_id
-    ? await supabaseAdmin
+    ? await getSupabaseAdmin()
         .from('staff_members')
         .select('name')
         .eq('id', final_staff_id)
@@ -296,7 +296,7 @@ try {
       ? `€ ${(svc.price_cents / 100).toFixed(2)}`
       : '-'
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from,
     to: cleanEmail,
     subject: `Prenotazione ricevuta - ${businessName}`,
@@ -349,7 +349,7 @@ try {
 // 8) Invio notifica push al gestore
 // La push NON deve bloccare la prenotazione: se fallisce, la prenotazione resta valida.
 try {
-  const { count: pendingCount } = await supabaseAdmin
+  const { count: pendingCount } = await getSupabaseAdmin()
   .from('service_bookings')
   .select('id', { count: 'exact', head: true })
   .eq('tenant_id', tenant_id)

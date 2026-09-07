@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { resend } from '@/lib/resendClient'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { getResend } from '@/lib/resendClient'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -86,7 +86,7 @@ if (!accessToken) {
 const {
   data: { user },
   error: userErr,
-} = await supabaseAdmin.auth.getUser(accessToken)
+} = await getSupabaseAdmin().auth.getUser(accessToken)
 
 if (userErr || !user) {
   return NextResponse.json(
@@ -95,7 +95,7 @@ if (userErr || !user) {
   )
 }
 
-const { data: membership, error: membershipErr } = await supabaseAdmin
+const { data: membership, error: membershipErr } = await getSupabaseAdmin()
   .from('tenant_users')
   .select('tenant_id, user_id, role')
   .eq('tenant_id', tenantId)
@@ -122,7 +122,7 @@ if (!membership) {
       )
     }
 
-    const { data: booking, error: bookingErr } = await supabaseAdmin
+    const { data: booking, error: bookingErr } = await getSupabaseAdmin()
       .from('service_bookings')
       .select(
         'id, tenant_id, service_id, customer_name, customer_email, booking_date, booking_time, status',
@@ -148,13 +148,13 @@ if (!membership) {
       })
     }
 
-    const { data: service } = await supabaseAdmin
+    const { data: service } = await getSupabaseAdmin()
       .from('services')
       .select('name, duration_minutes, price_cents')
       .eq('id', booking.service_id)
       .single()
 
-    const { data: tenant } = await supabaseAdmin
+    const { data: tenant } = await getSupabaseAdmin()
       .from('tenants')
       .select('name')
       .eq('id', tenantId)
@@ -212,7 +212,7 @@ if (type === 'cancelled') {
 }
     const from = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from,
       to,
       subject,

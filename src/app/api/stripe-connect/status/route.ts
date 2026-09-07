@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getMyMembership } from '@/lib/authz'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -26,7 +26,7 @@ export async function GET() {
 
     const stripe = new Stripe(stripeSecret)
 
-    const { data: tenant, error: tenantErr } = await supabaseAdmin
+    const { data: tenant, error: tenantErr } = await getSupabaseAdmin()
       .from('tenants')
       .select(
         `
@@ -75,7 +75,7 @@ export async function GET() {
       stripe_connect_requirements: account.requirements ?? null,
     }
 
-    const { error: updateErr } = await supabaseAdmin
+    const { error: updateErr } = await getSupabaseAdmin()
       .from('tenants')
       .update(payload)
       .eq('id', tenant.id)

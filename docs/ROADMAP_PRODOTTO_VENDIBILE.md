@@ -18,7 +18,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **SEC-04 — Proteggere l'annullamento degli hold Stripe.** Token firmato e a scadenza, validazione UUID, limite del body e rate limiting verificati in produzione.
 - [x] **SEC-05 — Rendere distribuito il rate limiting.** Store atomico condiviso Supabase implementato e verificato in produzione per tutte le API pubbliche applicative (prenotazioni, disponibilità, checkout, annullamenti, onboarding e form tester); il login resta protetto dai limiti nativi di Supabase Auth.
 - [x] **SEC-06 — Chiudere gli advisor `SECURITY DEFINER`.** Helper RLS spostati nello schema privato con permessi minimi; 24 policy preservate, test autenticato e advisor verificati in produzione.
-- [-] **SEC-07 — Test automatici di isolamento multi-tenant.** Test transazionale implementato e superato con ruoli `anon`, proprietario e staff; verifica privilegi, letture tra tenant e scritture riservate. In attesa di PR e controllo CI.
+- [x] **SEC-07 — Test automatici di isolamento multi-tenant.** Test transazionale pubblicato e superato con ruoli `anon`, proprietario e staff; verifica privilegi, letture tra tenant e scritture riservate.
 
 ## P1 — integrità di pagamenti e dati
 
@@ -32,7 +32,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 
 ## P1 — affidabilità operativa
 
-- [ ] **OPS-01 — Rendere la build indipendente dall'inizializzazione delle credenziali.** Il client Supabase amministrativo viene creato all'import e una build senza env fallisce durante la raccolta delle route; introdurre inizializzazione lazy e controllo centralizzato delle variabili.
+- [-] **OPS-01 — Rendere la build indipendente dall'inizializzazione delle credenziali.** Inizializzazione lazy e validazione esplicita applicate ai client Supabase e Resend; build senza credenziali e test automatici superati. In attesa di PR e verifica della preview.
 - [ ] **OPS-02 — Logging strutturato e codici richiesta.** Uniformare i log delle API senza dati personali, aggiungere `requestId`, durata, route e codici errore pubblici stabili.
 - [ ] **OPS-03 — Monitoraggio automatico e allarmi.** Aggiungere error tracking/uptime per home, health, prenotazione e webhook; su piano gratuito mantenere anche una procedura di controllo Vercel.
 - [ ] **OPS-04 — Test end-to-end.** Automatizzare i flussi cliente, proprietario e staff, inclusi prenotazione, conflitto, autorizzazioni, email simulata e webhook Stripe firmato.
@@ -58,7 +58,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **BASE-07 — RLS staff:** scritture sugli operatori riservate al proprietario.
 - [x] **BASE-08 — Concorrenza prenotazioni:** guardia atomica database tra booking e hold Stripe, con test transazionale e rollback.
 - [x] **BASE-09 — Dipendenze:** audit npm del 6 settembre 2026 con 0 vulnerabilità note.
-- [x] **BASE-10 — Qualità corrente:** 27 test automatici superati, lint e build puliti.
+- [x] **BASE-10 — Qualità corrente:** 31 test automatici superati, lint e build puliti.
 - [x] **BASE-11 — Produzione corrente:** deploy Vercel `READY`, endpoint health operativo e nessun errore runtime nelle ultime 24 ore al momento dell'audit.
 
 ## Limitazioni note del piano gratuito

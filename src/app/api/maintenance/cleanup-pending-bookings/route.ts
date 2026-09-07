@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -29,7 +29,7 @@ if (!bearerToken || bearerToken !== expectedSecret) {
 
     const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString()
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('service_bookings')
       .update({
         status: 'cancelled',

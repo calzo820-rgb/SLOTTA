@@ -35,8 +35,8 @@ export async function enforceDistributedRateLimit(
   const bucketKey = hashRateLimitIdentity(scope, ip)
   const windowSeconds = Math.max(1, Math.ceil(windowMs / 1000))
 
-  const { supabaseAdmin } = await import('@/lib/supabaseAdmin')
-  const { data, error } = await supabaseAdmin
+  const { getSupabaseAdmin } = await import('@/lib/supabaseAdmin')
+  const { data, error } = await getSupabaseAdmin()
     .rpc('consume_api_rate_limit', {
       p_bucket_key: bucketKey,
       p_limit: limit,

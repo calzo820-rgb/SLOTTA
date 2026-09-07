@@ -1,8 +1,17 @@
-// src/lib/resendClient.ts
 import { Resend } from 'resend'
 
-if (!process.env.RESEND_API_KEY) {
-  console.warn('RESEND_API_KEY non impostata (.env.local)')
-}
+let cachedClient: Resend | undefined
 
-export const resend = new Resend(process.env.RESEND_API_KEY || '')
+export function getResend(): Resend {
+  if (!cachedClient) {
+    const apiKey = process.env.RESEND_API_KEY?.trim()
+
+    if (!apiKey) {
+      throw new Error('Missing required server environment variable: RESEND_API_KEY')
+    }
+
+    cachedClient = new Resend(apiKey)
+  }
+
+  return cachedClient
+}

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 type Props = {
   params: Promise<{ slug: string }>
   searchParams: Promise<{
@@ -71,7 +71,7 @@ export default async function BookingSuccessPage({
   const bookingId = sp.booking || ''
   const sessionId = sp.session_id || ''
 
-  const { data: tenant } = await supabaseAdmin
+  const { data: tenant } = await getSupabaseAdmin()
     .from('tenants')
     .select('id, name, slug, logo_url')
     .eq('slug', slug)
@@ -81,7 +81,7 @@ export default async function BookingSuccessPage({
   let service: ServiceRow | null = null
 
   if (bookingId) {
-    const { data: bookingRow } = await supabaseAdmin
+    const { data: bookingRow } = await getSupabaseAdmin()
       .from('service_bookings')
       .select(
         'id, service_id, customer_name, customer_email, booking_date, booking_time, status, payment_status',
@@ -93,7 +93,7 @@ export default async function BookingSuccessPage({
     booking = bookingRow as BookingRow | null
 
     if (booking?.service_id) {
-      const { data: serviceRow } = await supabaseAdmin
+      const { data: serviceRow } = await getSupabaseAdmin()
         .from('services')
         .select('name, duration_minutes, price_cents')
         .eq('id', booking.service_id)
@@ -103,7 +103,7 @@ export default async function BookingSuccessPage({
     }
   }
 if (!booking && sessionId) {
-  const { data: bookingRow } = await supabaseAdmin
+  const { data: bookingRow } = await getSupabaseAdmin()
     .from('service_bookings')
     .select(
       'id, service_id, customer_name, customer_email, booking_date, booking_time, status, payment_status',
@@ -115,7 +115,7 @@ if (!booking && sessionId) {
   booking = bookingRow as BookingRow | null
 
   if (booking?.service_id) {
-    const { data: serviceRow } = await supabaseAdmin
+    const { data: serviceRow } = await getSupabaseAdmin()
       .from('services')
       .select('name, duration_minutes, price_cents')
       .eq('id', booking.service_id)
