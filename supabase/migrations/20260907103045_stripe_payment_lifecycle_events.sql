@@ -241,16 +241,18 @@ begin
     raise exception using errcode = '22023', message = 'SLOTTA_INVALID_STRIPE_EVENT';
   end if;
 
-  select b, t.stripe_connect_account_id
-    into v_booking, v_tenant_account
+  select b.* into v_booking
   from public.service_bookings b
-  join public.tenants t on t.id = b.tenant_id
   where b.stripe_payment_intent_id = p_payment_intent_id
-  for update of b;
+  for update;
 
   if not found then
     raise exception using errcode = 'P0002', message = 'SLOTTA_BOOKING_NOT_FOUND';
   end if;
+
+  select t.stripe_connect_account_id into v_tenant_account
+  from public.tenants t
+  where t.id = v_booking.tenant_id;
 
   if v_tenant_account <> p_stripe_account_id then
     raise exception using errcode = '22023', message = 'SLOTTA_STRIPE_PAYMENT_MISMATCH';
