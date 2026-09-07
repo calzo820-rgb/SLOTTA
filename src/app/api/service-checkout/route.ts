@@ -340,6 +340,9 @@ try {
 
         status: 'pending',
         expires_at: expiresAt.toISOString(),
+        expected_amount_cents: priceCents,
+        expected_currency: 'eur',
+        stripe_connect_account_id: stripeAccountId,
       })
       .select('id')
       .single()

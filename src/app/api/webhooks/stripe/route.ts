@@ -3,6 +3,10 @@ import Stripe from 'stripe'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { getResend } from '@/lib/resendClient'
 import { sendPushNotificationsToTenant } from '@/lib/sendPushNotifications'
+import {
+  getPaidCheckoutDetails,
+  isStripeFinalizationError,
+} from '@/lib/stripeCheckoutValidation'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -64,56 +68,55 @@ export async function POST(req: Request) {
      * - Stripe riceve hold_id
      * - Il webhook trasforma l'hold in prenotazione vera
      */
-if (event.type === 'checkout.session.completed') {
-  const session = event.data.object as Stripe.Checkout.Session
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session
+      const payment = getPaidCheckoutDetails(session, event.account || null)
 
-  const holdId = session.metadata?.hold_id
-  const tenantId = session.metadata?.tenant_id
-  const metadataStripeAccountId =
-    session.metadata?.stripe_connect_account_id || null
-  const eventStripeAccountId = event.account || null
-
-  if (
-    metadataStripeAccountId &&
-    eventStripeAccountId &&
-    metadataStripeAccountId !== eventStripeAccountId
-  ) {
-    console.warn('Account Stripe Connect non coerente nel webhook completed:', {
-      metadataStripeAccountId,
-      eventStripeAccountId,
-      sessionId: session.id,
-    })
-
-    return NextResponse.json({ received: true })
-  }
-
-  if (!holdId || !tenantId) {
-        console.warn('Webhook Stripe senza hold_id o tenant_id:', {
-          holdId,
-          tenantId,
+      if (!payment) {
+        console.warn('Checkout Stripe non idonea alla finalizzazione:', {
+          eventId: event.id,
           sessionId: session.id,
+          paymentStatus: session.payment_status,
         })
-
         return NextResponse.json({ received: true })
       }
 
+      const { data: finalization, error: finalizationError } =
+        await getSupabaseAdmin()
+          .rpc('finalize_stripe_booking', {
+            p_hold_id: payment.holdId,
+            p_tenant_id: payment.tenantId,
+            p_stripe_session_id: payment.sessionId,
+            p_stripe_payment_intent_id: payment.paymentIntentId,
+            p_amount_total: payment.amountTotal,
+            p_currency: payment.currency,
+            p_stripe_connect_account_id: payment.stripeAccountId,
+          })
+          .single()
+
+      if (finalizationError) throw finalizationError
+      const finalizationResult = finalization as {
+        booking_id: string
+        was_created: boolean
+      } | null
+
+      if (!finalizationResult?.was_created) {
+        return NextResponse.json({ received: true })
+      }
+
+      const holdId = payment.holdId
+      const tenantId = payment.tenantId
       const { data: hold, error: holdErr } = await getSupabaseAdmin()
         .from('service_booking_holds')
         .select(
           `
           id,
-          tenant_id,
           service_id,
-          staff_id,
           customer_name,
           customer_email,
           customer_phone,
-          note,
           booking_date,
-          booking_time,
-          status,
-          expires_at,
-          stripe_session_id
+          booking_time
         `,
         )
         .eq('id', holdId)
@@ -123,119 +126,8 @@ if (event.type === 'checkout.session.completed') {
       if (holdErr || !hold) {
         throw holdErr || new Error('Hold prenotazione non trovato')
       }
-      if (metadataStripeAccountId) {
-        const { data: tenantConnect, error: tenantConnectErr } = await getSupabaseAdmin()
-          .from('tenants')
-          .select('stripe_connect_account_id')
-          .eq('id', tenantId)
-          .maybeSingle()
 
-        if (tenantConnectErr) {
-          throw tenantConnectErr
-        }
-
-        if (
-          tenantConnect?.stripe_connect_account_id &&
-          tenantConnect.stripe_connect_account_id !== metadataStripeAccountId
-        ) {
-          console.warn('Tenant e Stripe account non coerenti nel webhook completed:', {
-            tenantId,
-            tenantStripeAccountId: tenantConnect.stripe_connect_account_id,
-            metadataStripeAccountId,
-            sessionId: session.id,
-          })
-
-          return NextResponse.json({ received: true })
-        }
-      }
-      /**
-       * Idempotenza:
-       * Stripe può mandare lo stesso webhook più di una volta.
-       * Se l'hold è già paid, non creiamo doppioni.
-       */
-      if (hold.status === 'paid') {
-        return NextResponse.json({ received: true })
-      }
-
-      if (hold.status !== 'pending') {
-        console.warn('Hold non più pending durante webhook completed:', {
-          holdId,
-          holdStatus: hold.status,
-          sessionId: session.id,
-        })
-
-        return NextResponse.json({ received: true })
-      }
-/**
- * Idempotenza extra:
- * se esiste già una prenotazione con questo stripe_session_id,
- * non creiamo doppioni.
- */
-const { data: existingBooking, error: existingBookingErr } = await getSupabaseAdmin()
-  .from('service_bookings')
-  .select('id')
-  .eq('stripe_session_id', session.id)
-  .maybeSingle()
-
-if (existingBookingErr) {
-  throw existingBookingErr
-}
-
-if (existingBooking) {
-  await getSupabaseAdmin()
-    .from('service_booking_holds')
-    .update({
-      status: 'paid',
-      stripe_session_id: session.id,
-    })
-    .eq('id', hold.id)
-    .eq('tenant_id', tenantId)
-
-  return NextResponse.json({ received: true })
-}
-      /**
-       * Crea la prenotazione vera.
-       * Questa è la prima volta in cui il gestore la vedrà.
-       */
-      const { data: insertedBooking, error: insertErr } = await getSupabaseAdmin()
-        .from('service_bookings')
-        .insert({
-          tenant_id: hold.tenant_id,
-          service_id: hold.service_id,
-          staff_id: hold.staff_id,
-
-          customer_name: hold.customer_name,
-          customer_email: hold.customer_email,
-          customer_phone: hold.customer_phone,
-          note: hold.note,
-
-          booking_date: hold.booking_date,
-          booking_time: hold.booking_time,
-
-          status: 'confirmed',
-          payment_status: 'paid',
-          stripe_session_id: session.id,
-          checkout_pending: false,
-        })
-        .select('id')
-        .single()
-
-      if (insertErr) {
-        throw insertErr
-      }
-
-      const { error: updateHoldErr } = await getSupabaseAdmin()
-        .from('service_booking_holds')
-        .update({
-          status: 'paid',
-          stripe_session_id: session.id,
-        })
-        .eq('id', hold.id)
-        .eq('tenant_id', tenantId)
-
-      if (updateHoldErr) {
-        throw updateHoldErr
-      }
+      const insertedBooking = { id: finalizationResult.booking_id }
 
       /**
        * Recupero dati attività e servizio per email/notifiche
@@ -248,16 +140,13 @@ if (existingBooking) {
 
       const { data: service } = await getSupabaseAdmin()
         .from('services')
-        .select('name, duration_minutes, price_cents')
+        .select('name')
         .eq('id', hold.service_id)
         .single()
 
       const businessName = tenant?.name || 'il salone'
       const serviceName = service?.name || 'Servizio'
-      const price =
-        typeof service?.price_cents === 'number'
-          ? `€ ${(service.price_cents / 100).toFixed(2)}`
-          : '—'
+      const price = `€ ${(payment.amountTotal / 100).toFixed(2)}`
 
       const from = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
@@ -412,6 +301,10 @@ if (event.type === 'checkout.session.expired') {
 
     return NextResponse.json({ received: true })
   } catch (err: unknown) {
+    if (isStripeFinalizationError(err)) {
+      console.warn('Webhook Stripe rifiutato dalla finalizzazione:', err)
+      return NextResponse.json({ received: true })
+    }
     // Log the raw error for debugging
     console.error('Errore gestione webhook Stripe:', err)
     return NextResponse.json(

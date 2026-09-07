@@ -19,12 +19,12 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **SEC-05 — Rendere distribuito il rate limiting.** Store atomico condiviso Supabase implementato e verificato in produzione per tutte le API pubbliche applicative (prenotazioni, disponibilità, checkout, annullamenti, onboarding e form tester); il login resta protetto dai limiti nativi di Supabase Auth.
 - [x] **SEC-06 — Chiudere gli advisor `SECURITY DEFINER`.** Helper RLS spostati nello schema privato con permessi minimi; 24 policy preservate, test autenticato e advisor verificati in produzione.
 - [x] **SEC-07 — Test automatici di isolamento multi-tenant.** Test transazionale pubblicato e superato con ruoli `anon`, proprietario e staff; verifica privilegi, letture tra tenant e scritture riservate.
-- [-] **SEC-08 — Validare le disponibilità lato server.** Regole centralizzate per tenant e servizi attivi, anticipo minimo, orari del salone e degli operatori, chiusure e operatore richiesto; test automatici superati. In attesa di PR e verifica in preview.
+- [x] **SEC-08 — Validare le disponibilità lato server.** Regole centralizzate per tenant e servizi attivi, anticipo minimo, orari del salone e degli operatori, chiusure e operatore richiesto; test, preview e produzione verificati.
 
 ## P1 — integrità di pagamenti e dati
 
-- [ ] **PAY-01 — Rendere atomica la finalizzazione Stripe.** Conversione hold → prenotazione → stato pagato in un'unica transazione database idempotente; nessuno stato parziale se una query fallisce.
-- [ ] **PAY-02 — Verificare lo stato economico del pagamento.** Prima di confermare la prenotazione controllare `payment_status`, importo, valuta, account Connect e corrispondenza con servizio/tenant.
+- [-] **PAY-01 — Rendere atomica la finalizzazione Stripe.** Funzione transazionale idempotente e indice univoco preparati; test SQL con rollback pronto. In attesa di PR, migrazione e verifica transazionale.
+- [-] **PAY-02 — Verificare lo stato economico del pagamento.** Controlli su `payment_status`, modalità, importo, valuta, PaymentIntent, tenant e account Connect preparati. In attesa di PR e verifica con webhook firmato.
 - [ ] **PAY-03 — Gestire tutti gli eventi Stripe rilevanti.** Coprire almeno pagamento asincrono riuscito/fallito, scadenza sessione, rimborso, disputa e account Connect disabilitato, con idempotenza degli eventi.
 - [ ] **PAY-04 — Collaudo Stripe Connect reale.** Eseguire in produzione pagamento, annullamento, sessione abbandonata, rimborso e verifica accredito sul conto collegato. Richiede intervento manuale del titolare.
 - [ ] **DATA-01 — Proteggere la pagina di conferma prenotazione.** Evitare che un semplice ID nella URL consenta di visualizzare nome, email e dettagli: usare un token pubblico dedicato, limitato e revocabile.
@@ -59,7 +59,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **BASE-07 — RLS staff:** scritture sugli operatori riservate al proprietario.
 - [x] **BASE-08 — Concorrenza prenotazioni:** guardia atomica database tra booking e hold Stripe, con test transazionale e rollback.
 - [x] **BASE-09 — Dipendenze:** audit npm del 6 settembre 2026 con 0 vulnerabilità note.
-- [x] **BASE-10 — Qualità corrente:** 31 test automatici superati, lint e build puliti.
+- [x] **BASE-10 — Qualità corrente:** 34 test automatici superati, lint e build puliti.
 - [x] **BASE-11 — Produzione corrente:** deploy Vercel `READY`, endpoint health operativo e nessun errore runtime nelle ultime 24 ore al momento dell'audit.
 
 ## Limitazioni note del piano gratuito
