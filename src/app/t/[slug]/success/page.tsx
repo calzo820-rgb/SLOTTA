@@ -93,6 +93,7 @@ export default async function BookingSuccessPage({
 
   let booking: BookingRow | null = null
   let service: ServiceRow | null = null
+  let isCheckoutHold = false
 
   if (isValidBookingConfirmationToken(confirmationToken)) {
     const confirmationHash = hashBookingConfirmationToken(confirmationToken)
@@ -131,6 +132,7 @@ export default async function BookingSuccessPage({
     .maybeSingle()
 
       booking = holdRow as BookingRow | null
+      isCheckoutHold = Boolean(holdRow)
     }
 
   if (booking?.service_id) {
@@ -173,6 +175,8 @@ export default async function BookingSuccessPage({
 
   const title = isCancelled
     ? 'Prenotazione cancellata'
+    : isCheckoutHold
+      ? 'Pagamento in elaborazione'
     : isPaid
       ? 'Pagamento completato'
       : isConfirmed
@@ -181,6 +185,8 @@ export default async function BookingSuccessPage({
 
   const subtitle = isCancelled
     ? 'Questa prenotazione risulta cancellata. Contatta l’attività per maggiori informazioni.'
+    : isCheckoutHold
+      ? 'Stripe ha ricevuto il pagamento. La prenotazione sarà visibile appena terminerà la verifica automatica.'
     : isPaid
       ? 'Il pagamento è andato a buon fine e la prenotazione è stata registrata.'
       : isConfirmed
@@ -261,7 +267,9 @@ export default async function BookingSuccessPage({
                   Pagamento
                 </p>
                 <p className="mt-1 text-sm font-black">
-                  {paymentStatusLabel(booking?.payment_status)}
+                  {isCheckoutHold
+                    ? 'Pagamento in verifica'
+                    : paymentStatusLabel(booking?.payment_status)}
                 </p>
               </div>
             </div>
