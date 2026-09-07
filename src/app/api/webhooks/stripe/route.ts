@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { resend } from '@/lib/resendClient'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { getResend } from '@/lib/resendClient'
 import { sendPushNotificationsToTenant } from '@/lib/sendPushNotifications'
 
 export const runtime = 'nodejs'
@@ -97,7 +97,7 @@ if (event.type === 'checkout.session.completed') {
         return NextResponse.json({ received: true })
       }
 
-      const { data: hold, error: holdErr } = await supabaseAdmin
+      const { data: hold, error: holdErr } = await getSupabaseAdmin()
         .from('service_booking_holds')
         .select(
           `
@@ -124,7 +124,7 @@ if (event.type === 'checkout.session.completed') {
         throw holdErr || new Error('Hold prenotazione non trovato')
       }
       if (metadataStripeAccountId) {
-        const { data: tenantConnect, error: tenantConnectErr } = await supabaseAdmin
+        const { data: tenantConnect, error: tenantConnectErr } = await getSupabaseAdmin()
           .from('tenants')
           .select('stripe_connect_account_id')
           .eq('id', tenantId)
@@ -171,7 +171,7 @@ if (event.type === 'checkout.session.completed') {
  * se esiste già una prenotazione con questo stripe_session_id,
  * non creiamo doppioni.
  */
-const { data: existingBooking, error: existingBookingErr } = await supabaseAdmin
+const { data: existingBooking, error: existingBookingErr } = await getSupabaseAdmin()
   .from('service_bookings')
   .select('id')
   .eq('stripe_session_id', session.id)
@@ -182,7 +182,7 @@ if (existingBookingErr) {
 }
 
 if (existingBooking) {
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('service_booking_holds')
     .update({
       status: 'paid',
@@ -197,7 +197,7 @@ if (existingBooking) {
        * Crea la prenotazione vera.
        * Questa è la prima volta in cui il gestore la vedrà.
        */
-      const { data: insertedBooking, error: insertErr } = await supabaseAdmin
+      const { data: insertedBooking, error: insertErr } = await getSupabaseAdmin()
         .from('service_bookings')
         .insert({
           tenant_id: hold.tenant_id,
@@ -224,7 +224,7 @@ if (existingBooking) {
         throw insertErr
       }
 
-      const { error: updateHoldErr } = await supabaseAdmin
+      const { error: updateHoldErr } = await getSupabaseAdmin()
         .from('service_booking_holds')
         .update({
           status: 'paid',
@@ -240,13 +240,13 @@ if (existingBooking) {
       /**
        * Recupero dati attività e servizio per email/notifiche
        */
-      const { data: tenant } = await supabaseAdmin
+      const { data: tenant } = await getSupabaseAdmin()
         .from('tenants')
         .select('name, contact_email')
         .eq('id', tenantId)
         .single()
 
-      const { data: service } = await supabaseAdmin
+      const { data: service } = await getSupabaseAdmin()
         .from('services')
         .select('name, duration_minutes, price_cents')
         .eq('id', hold.service_id)
@@ -266,7 +266,7 @@ if (existingBooking) {
        */
       if (hold.customer_email) {
         try {
-          await resend.emails.send({
+          await getResend().emails.send({
             from,
             to: hold.customer_email,
             subject: `Prenotazione confermata - ${businessName}`,
@@ -304,7 +304,7 @@ if (existingBooking) {
        */
       if (tenant?.contact_email) {
         try {
-          await resend.emails.send({
+          await getResend().emails.send({
             from,
             to: tenant.contact_email,
             subject: `Nuova prenotazione pagata - ${businessName}`,
@@ -342,7 +342,7 @@ if (existingBooking) {
        * Push gestore
        */
       try {
-        const { count: pendingCount } = await supabaseAdmin
+        const { count: pendingCount } = await getSupabaseAdmin()
           .from('service_bookings')
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', tenantId)
@@ -395,7 +395,7 @@ if (event.type === 'checkout.session.expired') {
   }
 
   if (holdId && tenantId) {
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
           .from('service_booking_holds')
           .update({
             status: 'expired',

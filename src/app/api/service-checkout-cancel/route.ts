@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 import { isUuid } from '@/lib/bookingRequest'
 import { verifyHoldCancelToken } from '@/lib/holdCancelToken'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -16,7 +16,7 @@ function isSafeLocalUrl(value: string, origin: string) {
 }
 
 async function cancelPendingHold(holdId: string) {
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('service_booking_holds')
     .update({ status: 'cancelled' })
     .eq('id', holdId)

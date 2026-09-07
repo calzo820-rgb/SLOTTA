@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getMyMembership } from '@/lib/authz'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import {
   safeExportFilenamePart,
   TENANT_EXPORT_TABLES,
@@ -14,7 +14,7 @@ async function readTenantTable(table: TenantExportTable, tenantId: string) {
   const rows: Record<string, unknown>[] = []
 
   for (let from = 0; from < MAX_ROWS_PER_TABLE; from += PAGE_SIZE) {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from(table)
       .select('*')
       .eq(table === 'tenants' ? 'id' : 'tenant_id', tenantId)

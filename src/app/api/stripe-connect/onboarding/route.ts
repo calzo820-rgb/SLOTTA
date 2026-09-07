@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getMyMembership } from '@/lib/authz'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     const stripe = new Stripe(stripeSecret)
 
-    const { data: tenant, error: tenantErr } = await supabaseAdmin
+    const { data: tenant, error: tenantErr } = await getSupabaseAdmin()
       .from('tenants')
       .select(
         `
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
 
       accountId = account.id
 
-      const { error: updateErr } = await supabaseAdmin
+      const { error: updateErr } = await getSupabaseAdmin()
         .from('tenants')
         .update({
           stripe_connect_account_id: accountId,

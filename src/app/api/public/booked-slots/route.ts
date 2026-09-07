@@ -1,6 +1,6 @@
 // src/app/api/public/booked-slots/route.ts
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { isUuid, isValidBookingDate } from '@/lib/bookingRequest'
 import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
      * - le checkout_pending vecchie non devono bloccare;
      * - pending in salone, confirmed, done bloccano.
      */
-    let bookingsQuery = supabaseAdmin
+    let bookingsQuery = getSupabaseAdmin()
       .from('service_bookings')
       .select(
         'service_id, staff_id, booking_time, status, payment_status, checkout_pending, created_at',
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
      * Hold Stripe attivi.
      * Questi sono gli slot riservati mentre il cliente è su Stripe.
      */
-    let holdsQuery = supabaseAdmin
+    let holdsQuery = getSupabaseAdmin()
       .from('service_booking_holds')
       .select('service_id, staff_id, booking_time, status, expires_at')
       .eq('tenant_id', tenant_id)

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { resend } from '@/lib/resendClient'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { getResend } from '@/lib/resendClient'
 import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 
 function cleanText(value: unknown, max = 500) {
@@ -60,7 +60,7 @@ async function notifyEmail(subject: string, text: string) {
   }
 
   try {
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from,
       to,
       subject,
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('tester_leads')
       .insert({
         salon_name: salonName,
