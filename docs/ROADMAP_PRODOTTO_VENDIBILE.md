@@ -34,8 +34,8 @@ Ultimo audit tecnico: 7 settembre 2026.
 ## P1 — affidabilità operativa
 
 - [x] **OPS-01 — Rendere la build indipendente dall'inizializzazione delle credenziali.** Inizializzazione lazy e validazione esplicita applicate ai client Supabase e Resend; build senza credenziali, test, preview e produzione verificati.
-- [-] **OPS-02 — Logging strutturato e codici richiesta.** `requestId`, durata, route e codici errore pubblici stabili implementati sulle API pubbliche critiche e sul webhook Stripe, senza contenuti delle richieste; in attesa di PR e verifica produzione.
-- [ ] **OPS-03 — Monitoraggio automatico e allarmi.** Aggiungere error tracking/uptime per home, health, prenotazione e webhook; su piano gratuito mantenere anche una procedura di controllo Vercel.
+- [x] **OPS-02 — Logging strutturato e codici richiesta.** `requestId`, durata, route e codici errore pubblici stabili pubblicati e verificati sulle API pubbliche critiche e sul webhook Stripe, senza contenuti delle richieste.
+- [-] **OPS-03 — Monitoraggio automatico e allarmi.** Controllo sintetico gratuito ogni 30 minuti implementato per home, health, protezione prenotazione e webhook; apre una issue su errore e la chiude al ripristino. In attesa di PR e verifica del workflow sul ramo principale.
 - [ ] **OPS-04 — Test end-to-end.** Automatizzare i flussi cliente, proprietario e staff, inclusi prenotazione, conflitto, autorizzazioni, email simulata e webhook Stripe firmato.
 - [ ] **OPS-05 — Affidabilità email.** Verificare dominio mittente, SPF/DKIM/DMARC, gestione errori Resend, deduplicazione e retry delle email importanti.
 
@@ -59,7 +59,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **BASE-07 — RLS staff:** scritture sugli operatori riservate al proprietario.
 - [x] **BASE-08 — Concorrenza prenotazioni:** guardia atomica database tra booking e hold Stripe, con test transazionale e rollback.
 - [x] **BASE-09 — Dipendenze:** audit npm del 6 settembre 2026 con 0 vulnerabilità note.
-- [x] **BASE-10 — Qualità corrente:** 45 test automatici pubblicati; la tranche OPS-02 aggiunge test locali dedicati, con lint e build da verificare.
+- [x] **BASE-10 — Qualità corrente:** 48 test automatici pubblicati; la tranche OPS-03 porta la suite locale a 50 test, con lint e build puliti.
 - [x] **BASE-11 — Produzione corrente:** deploy Vercel `READY`, endpoint health operativo e nessun errore runtime nelle ultime 24 ore al momento dell'audit.
 
 ## Limitazioni note del piano gratuito
