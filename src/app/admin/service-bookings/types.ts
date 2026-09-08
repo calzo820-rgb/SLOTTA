@@ -20,6 +20,7 @@ export type Booking = {
     | 'dispute_lost'
   created_at: string
   manager_seen_at?: string | null
+  customer_cancelled_at?: string | null
   checkout_pending?: boolean | null
 }
 

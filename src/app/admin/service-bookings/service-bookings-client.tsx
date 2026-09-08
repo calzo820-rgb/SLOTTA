@@ -368,7 +368,7 @@ setBookingSettings({
       const { data: bRows, error: bErr } = await supabase
   .from('service_bookings')
   .select(
-  'id, tenant_id, service_id, staff_id, customer_name, customer_phone, customer_email, booking_date, booking_time, note, status, payment_status, manager_seen_at, checkout_pending, created_at',
+  'id, tenant_id, service_id, staff_id, customer_name, customer_phone, customer_email, booking_date, booking_time, note, status, payment_status, manager_seen_at, customer_cancelled_at, checkout_pending, created_at',
 )
   .eq('tenant_id', tenantId)
   .eq('checkout_pending', false)

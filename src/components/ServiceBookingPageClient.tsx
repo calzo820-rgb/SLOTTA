@@ -59,6 +59,7 @@ type CheckoutData = {
 type BookData = {
   booking_id?: string
   confirmation_token?: string
+  management_token?: string
   error?: string
 }
 import { MobileStepBar } from './service-booking/MobileStepBar'
@@ -668,8 +669,13 @@ if (checkoutData?.hold_id && checkoutData?.hold_cancel_token) {
     }
 
     const confirmationToken = bookData.confirmation_token
+    const managementToken = bookData.management_token
+    const successParams = new URLSearchParams({
+      confirmation_token: confirmationToken,
+    })
+    if (managementToken) successParams.set('management_token', managementToken)
     router.push(
-      `/t/${tenant.slug}/success?confirmation_token=${encodeURIComponent(confirmationToken)}`,
+      `/t/${tenant.slug}/success?${successParams.toString()}`,
     )
   } catch (e: unknown) {
     console.error(e)

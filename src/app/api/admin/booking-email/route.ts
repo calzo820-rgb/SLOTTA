@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { sendTransactionalEmail } from '@/lib/transactionalEmail'
+import {
+  bookingManagementExpiry,
+  buildBookingManagementUrl,
+  createBookingManagementToken,
+  hashBookingManagementToken,
+} from '@/lib/bookingManagement'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -156,7 +162,7 @@ if (!membership) {
 
     const { data: tenant } = await getSupabaseAdmin()
       .from('tenants')
-      .select('name')
+      .select('name, slug')
       .eq('id', tenantId)
       .single()
 
@@ -165,6 +171,29 @@ if (!membership) {
     const durationMinutes = service?.duration_minutes || 60
     const dateStr = fmtDate(booking.booking_date)
     const timeStr = fmtTime(booking.booking_time)
+    let managementUrl = ''
+    let managementTokenHash = ''
+
+    if (type !== 'cancelled' && tenant?.slug) {
+      const managementToken = createBookingManagementToken()
+      managementTokenHash = hashBookingManagementToken(managementToken)
+      const managementExpiresAt = bookingManagementExpiry(booking.booking_date)
+      const { error: tokenError } = await getSupabaseAdmin()
+        .from('service_bookings')
+        .update({
+          management_token_hash: managementTokenHash,
+          management_token_expires_at: managementExpiresAt.toISOString(),
+        })
+        .eq('id', booking.id)
+        .eq('tenant_id', tenantId)
+
+      if (tokenError) throw tokenError
+      managementUrl = buildBookingManagementUrl(
+        new URL(req.url).origin,
+        tenant.slug,
+        managementToken,
+      )
+    }
 
     const calendarUrl = buildGoogleCalendarLink({
       bookingDate: booking.booking_date,
@@ -265,6 +294,18 @@ if (type === 'cancelled') {
 
           ${extraBlock}
 
+          ${
+            managementUrl
+              ? `
+                <div style="margin-top: 18px;">
+                  <a href="${escapeHtml(managementUrl)}" style="display: inline-block; background: #0F1D2D; color: #ffffff; text-decoration: none; font-weight: 700; padding: 12px 16px; border-radius: 14px;">
+                    Gestisci o annulla prenotazione
+                  </a>
+                </div>
+              `
+              : ''
+          }
+
           <p style="margin-top: 22px; color: #64748b;">
             ${
               type === 'cancelled'
@@ -278,7 +319,9 @@ if (type === 'cancelled') {
           </p>
         </div>
       `,
-    }, `booking-${type}-${booking.id}`)
+    }, managementTokenHash
+      ? `booking-${type}-${booking.id}-${managementTokenHash.slice(0, 12)}`
+      : `booking-${type}-${booking.id}`)
 
     return NextResponse.json({ ok: true })
 } catch {

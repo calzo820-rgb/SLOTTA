@@ -13,6 +13,12 @@ import {
   getDisputeDetails,
   getRefundDetails,
 } from '@/lib/stripeWebhookEvents'
+import {
+  bookingManagementExpiry,
+  buildBookingManagementUrl,
+  createBookingManagementToken,
+  hashBookingManagementToken,
+} from '@/lib/bookingManagement'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -137,7 +143,7 @@ async function handlePost(req: Request) {
        */
       const { data: tenant } = await getSupabaseAdmin()
         .from('tenants')
-        .select('name, contact_email')
+        .select('name, slug, contact_email')
         .eq('id', tenantId)
         .single()
 
@@ -152,6 +158,24 @@ async function handlePost(req: Request) {
       const price = `€ ${(payment.amountTotal / 100).toFixed(2)}`
 
       const from = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+      const managementToken = createBookingManagementToken()
+      const managementExpiresAt = bookingManagementExpiry(hold.booking_date)
+      const { error: managementTokenError } = await getSupabaseAdmin()
+        .from('service_bookings')
+        .update({
+          management_token_hash: hashBookingManagementToken(managementToken),
+          management_token_expires_at: managementExpiresAt.toISOString(),
+        })
+        .eq('id', finalizationResult.booking_id)
+        .eq('tenant_id', tenantId)
+
+      if (managementTokenError) throw managementTokenError
+
+      const managementUrl = buildBookingManagementUrl(
+        new URL(req.url).origin,
+        tenant?.slug || '',
+        managementToken,
+      )
 
       /**
        * Email cliente
@@ -180,8 +204,13 @@ async function handlePost(req: Request) {
                   <p><strong>Pagamento:</strong> online completato</p>
                 </div>
 
-                <p style="margin-top: 16px;">
-                  Per modifiche o necessità, contatta direttamente l’attività.
+                <p style="margin-top: 18px;">
+                  <a href="${escapeHtml(managementUrl)}" style="display: inline-block; padding: 12px 18px; border-radius: 14px; background: #0F1D2D; color: #ffffff; text-decoration: none; font-weight: bold;">
+                    Gestisci prenotazione
+                  </a>
+                </p>
+                <p style="margin-top: 16px; color: #64748b;">
+                  Per annullamento e rimborso di una prenotazione già pagata, contatta direttamente l’attività.
                 </p>
               </div>
             `,

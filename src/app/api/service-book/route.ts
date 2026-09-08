@@ -24,6 +24,12 @@ import {
 } from '@/lib/bookingConfirmationToken'
 import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
 import { sendTransactionalEmail } from '@/lib/transactionalEmail'
+import {
+  bookingManagementExpiry,
+  buildBookingManagementUrl,
+  createBookingManagementToken,
+  hashBookingManagementToken,
+} from '@/lib/bookingManagement'
 function escapeHtml(value: string) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -192,6 +198,8 @@ if (!isStaffFree(final_staff_id)) {
 
     const confirmationToken = createBookingConfirmationToken()
     const confirmationExpiresAt = bookingConfirmationExpiry()
+    const managementToken = createBookingManagementToken()
+    const managementExpiresAt = bookingManagementExpiry(booking_date)
 
     // 6) insert booking (sempre con staff_id assegnato)
     const { data: inserted, error: insErr } = await getSupabaseAdmin()
@@ -211,6 +219,8 @@ customer_phone: cleanPhone,
         checkout_pending: false,
         confirmation_token_hash: hashBookingConfirmationToken(confirmationToken),
         confirmation_token_expires_at: confirmationExpiresAt.toISOString(),
+        management_token_hash: hashBookingManagementToken(managementToken),
+        management_token_expires_at: managementExpiresAt.toISOString(),
       })
       .select('id, staff_id')
       .single()
@@ -224,7 +234,7 @@ if (cleanEmail) {
 try {
   const { data: tenant } = await getSupabaseAdmin()
     .from('tenants')
-    .select('name')
+    .select('name, slug')
     .eq('id', tenant_id)
     .maybeSingle()
 
@@ -239,6 +249,11 @@ try {
   const from = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
   const businessName = tenant?.name || 'Slotta'
+  const managementUrl = buildBookingManagementUrl(
+    new URL(req.url).origin,
+    tenant?.slug || '',
+    managementToken,
+  )
   const serviceName = svc?.name || 'Servizio'
   const staffName = staffMember?.name || 'Assegnazione automatica'
   const price =
@@ -286,6 +301,12 @@ try {
           <strong>Nota:</strong> la prenotazione è stata inviata all’attività. Se necessario, verrai contattato per eventuali conferme o modifiche.
         </div>
 
+        <p style="margin: 22px 0 0;">
+          <a href="${escapeHtml(managementUrl)}" style="display: inline-block; padding: 12px 18px; border-radius: 14px; background: #0F1D2D; color: #ffffff; text-decoration: none; font-weight: bold;">
+            Gestisci o annulla prenotazione
+          </a>
+        </p>
+
         <p style="margin-top: 22px; font-size: 12px; color: #94a3b8;">
           Email inviata automaticamente da Slotta.
         </p>
@@ -319,6 +340,7 @@ return NextResponse.json({
   booking_id: inserted.id,
   staff_id: inserted.staff_id,
   confirmation_token: confirmationToken,
+  management_token: managementToken,
 })
   } catch (e: unknown) {
     // Generate a simple request ID to help trace errors in logs

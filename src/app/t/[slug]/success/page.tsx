@@ -8,6 +8,7 @@ type Props = {
   params: Promise<{ slug: string }>
   searchParams: Promise<{
   confirmation_token?: string
+  management_token?: string
   status?: string
 }>
 }
@@ -84,6 +85,7 @@ export default async function BookingSuccessPage({
   const sp = await searchParams
 
   const confirmationToken = sp.confirmation_token || ''
+  const managementToken = sp.management_token || ''
 
   const { data: tenant } = await getSupabaseAdmin()
     .from('tenants')
@@ -281,12 +283,21 @@ export default async function BookingSuccessPage({
               </div>
             ) : null}
 
-            {!isCancelled ? (
+            {!isCancelled && !managementToken ? (
               <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
                 <span className="font-black">Nota:</span>{' '}
                 se hai bisogno di modificare o annullare l’appuntamento,
                 contatta direttamente l’attività.
               </div>
+            ) : null}
+
+            {!isCancelled && managementToken ? (
+              <Link
+                href={`/t/${slug}/manage?token=${encodeURIComponent(managementToken)}`}
+                className="rounded-2xl border border-[#1FA7A6]/30 bg-[#E6FFFA] px-5 py-3 text-center text-sm font-black text-[#0F766E] transition hover:bg-[#D7F8F5]"
+              >
+                Gestisci o annulla prenotazione
+              </Link>
             ) : null}
 
             <Link
