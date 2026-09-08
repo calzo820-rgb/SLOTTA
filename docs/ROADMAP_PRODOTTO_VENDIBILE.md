@@ -1,6 +1,6 @@
 # Slotta — checklist per un prodotto vendibile
 
-Ultimo audit tecnico: 7 settembre 2026.
+Ultimo audit tecnico: 8 settembre 2026.
 
 ## Regole di avanzamento
 
@@ -28,6 +28,7 @@ Ultimo audit tecnico: 7 settembre 2026.
 - [x] **PAY-03 — Gestire tutti gli eventi Stripe rilevanti.** Pagamento asincrono riuscito/fallito, scadenza sessione, rimborso, disputa e account Connect disabilitato pubblicati con registro eventi idempotente; migrazione, privilegi, test transazionale e produzione verificati.
 - [ ] **PAY-04 — Collaudo Stripe Connect reale.** Eseguire in produzione pagamento, annullamento, sessione abbandonata, rimborso e verifica accredito sul conto collegato. Richiede intervento manuale del titolare.
 - [x] **DATA-01 — Proteggere la pagina di conferma prenotazione.** Token casuale dedicato con solo hash nel database, scadenza e revoca pubblicati per prenotazioni dirette e Stripe; migrazione, test transazionale e produzione verificati.
+- [x] **DATA-04 — Annullamento autonomo del cliente.** Link opaco separato, scadenza, preavviso configurabile, blocco delle prenotazioni pagate, notifiche e aggiornamento atomico pubblicati e verificati.
 - [ ] **DATA-02 — Cancellazione account e politica di conservazione.** L'esportazione esiste; aggiungere richiesta/cancellazione completa del tenant, tempi di retention per prenotazioni e lead e procedura di revoca sessioni.
 - [ ] **DATA-03 — Backup e prova di ripristino.** Documentare backup, export fuori piattaforma e ripristino; eseguire almeno una prova su ambiente non produttivo.
 
@@ -35,13 +36,13 @@ Ultimo audit tecnico: 7 settembre 2026.
 
 - [x] **OPS-01 — Rendere la build indipendente dall'inizializzazione delle credenziali.** Inizializzazione lazy e validazione esplicita applicate ai client Supabase e Resend; build senza credenziali, test, preview e produzione verificati.
 - [x] **OPS-02 — Logging strutturato e codici richiesta.** `requestId`, durata, route e codici errore pubblici stabili pubblicati e verificati sulle API pubbliche critiche e sul webhook Stripe, senza contenuti delle richieste.
-- [-] **OPS-03 — Monitoraggio automatico e allarmi.** Controllo sintetico gratuito pubblicato per home, health, protezione prenotazione e webhook; il trigger dopo ogni modifica a `main` è in attesa di PR e verifica, poi aprirà una issue su errore e la chiuderà al ripristino.
+- [x] **OPS-03 — Monitoraggio automatico e allarmi.** Controllo sintetico gratuito attivo per home, health, protezione prenotazione e webhook; apre una issue su errore e la chiude al ripristino.
 - [ ] **OPS-04 — Test end-to-end.** Automatizzare i flussi cliente, proprietario e staff, inclusi prenotazione, conflitto, autorizzazioni, email simulata e webhook Stripe firmato.
-- [-] **OPS-05 — Affidabilità email.** Controllo esplicito degli errori Resend, retry sicuro e deduplicazione degli invii critici in implementazione; dominio mittente e record SPF/DKIM/DMARC da verificare.
+- [x] **OPS-05 — Affidabilità email.** Errori Resend controllati, retry e deduplicazione pubblicati; dominio, SPF, DKIM e DMARC verificati con consegna reale in posta principale.
 
 ## P2 — requisiti commerciali
 
-- [ ] **BIZ-01 — Abbonamento SaaS del salone.** Trial, piano da 30 €/mese, rinnovo, portale cliente, fattura, pagamento fallito, periodo di tolleranza e sospensione controllata del tenant.
+- [-] **BIZ-01 — Abbonamento SaaS del salone.** Fondazione in lavorazione: stato trial/piano, Checkout separato da Connect, portale cliente e webhook dedicato con tolleranza di 7 giorni; restano sospensione controllata, configurazione del prodotto/prezzo e collaudo Stripe.
 - [ ] **BIZ-02 — Console di assistenza.** Vista interna con stato tenant, abbonamento, Stripe Connect e anomalie, senza possibilità di accedere ai dati cliente oltre il necessario.
 - [ ] **LEGAL-01 — Revisione legale e privacy.** Far validare Privacy, Termini, ruoli GDPR, DPA, sub-responsabili, retention, rimborsi e dati identificativi dell'attività; rimuovere i riferimenti “beta” al lancio commerciale.
 - [ ] **UX-01 — Audit accessibilità e mobile.** Tastiera, focus, contrasto, screen reader, modali, errori dei form e principali telefoni/browser.

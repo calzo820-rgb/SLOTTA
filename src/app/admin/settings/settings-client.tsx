@@ -12,6 +12,12 @@ type SettingsCard = {
 
 const settingsCards: SettingsCard[] = [
   {
+    title: 'Abbonamento Slotta',
+    description: 'Piano mensile, metodo di pagamento, fatture e rinnovo.',
+    href: '/admin/billing',
+    icon: '💳',
+  },
+  {
     title: 'Profilo attività',
     description: 'Nome attività, logo, contatti, indirizzo e link della pagina clienti.',
     href: '/admin/profile',
