@@ -68,6 +68,18 @@ const loadPendingCount = useCallback(async () => {
   }, [tenantId, loadPendingCount])
 
   useEffect(() => {
+    function handleBookingSeen() {
+      setPendingCount(current => Math.max(0, current - 1))
+    }
+
+    window.addEventListener('slotta:booking-seen', handleBookingSeen)
+
+    return () => {
+      window.removeEventListener('slotta:booking-seen', handleBookingSeen)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!tenantId) return
 
     const channel = supabase

@@ -79,12 +79,16 @@ export function BookingDrawer({
 }: Props) {
   const [contactCopied, setContactCopied] = useState(false)
 useEffect(() => {
-  if (!open || !booking?.id || !onMarkSeen) return
+  if (!open || !booking?.id || booking.manager_seen_at || !onMarkSeen) return
 
-  onMarkSeen(booking.id).catch(error => {
-    console.error('Errore mark booking seen:', error)
-  })
-}, [open, booking?.id, onMarkSeen])
+  onMarkSeen(booking.id)
+    .then(() => {
+      window.dispatchEvent(new Event('slotta:booking-seen'))
+    })
+    .catch(error => {
+      console.error('Errore mark booking seen:', error)
+    })
+}, [open, booking?.id, booking?.manager_seen_at, onMarkSeen])
   if (!open || !booking) return null
 
 const whatsappUrl = booking.customer_phone
