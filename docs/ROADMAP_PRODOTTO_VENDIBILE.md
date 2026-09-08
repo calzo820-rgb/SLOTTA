@@ -29,7 +29,7 @@ Ultimo audit tecnico: 8 settembre 2026.
 - [ ] **PAY-04 — Collaudo Stripe Connect reale.** Eseguire in produzione pagamento, annullamento, sessione abbandonata, rimborso e verifica accredito sul conto collegato. Richiede intervento manuale del titolare.
 - [x] **DATA-01 — Proteggere la pagina di conferma prenotazione.** Token casuale dedicato con solo hash nel database, scadenza e revoca pubblicati per prenotazioni dirette e Stripe; migrazione, test transazionale e produzione verificati.
 - [x] **DATA-04 — Annullamento autonomo del cliente.** Link opaco separato, scadenza, preavviso configurabile, blocco delle prenotazioni pagate, notifiche e aggiornamento atomico pubblicati e verificati.
-- [ ] **DATA-02 — Cancellazione account e politica di conservazione.** L'esportazione esiste; aggiungere richiesta/cancellazione completa del tenant, tempi di retention per prenotazioni e lead e procedura di revoca sessioni.
+- [-] **DATA-02 — Cancellazione account e politica di conservazione.** Richiesta protetta del proprietario, conferma esplicita, 30 giorni di ripensamento, annullamento e politica di retention preparati; resta da collaudare e automatizzare la cancellazione definitiva di database, Storage, Stripe e utenti Auth in staging.
 - [ ] **DATA-03 — Backup e prova di ripristino.** Documentare backup, export fuori piattaforma e ripristino; eseguire almeno una prova su ambiente non produttivo.
 
 ## P1 — affidabilità operativa
@@ -60,7 +60,7 @@ Ultimo audit tecnico: 8 settembre 2026.
 - [x] **BASE-07 — RLS staff:** scritture sugli operatori riservate al proprietario.
 - [x] **BASE-08 — Concorrenza prenotazioni:** guardia atomica database tra booking e hold Stripe, con test transazionale e rollback.
 - [x] **BASE-09 — Dipendenze:** audit npm del 6 settembre 2026 con 0 vulnerabilità note.
-- [x] **BASE-10 — Qualità corrente:** 50 test automatici pubblicati; la tranche OPS-05 aggiunge test locali dedicati, con lint e build da verificare.
+- [x] **BASE-10 — Qualità corrente:** 72 test automatici nella tranche corrente; lint, build e smoke test della build reale verificati.
 - [x] **BASE-11 — Produzione corrente:** deploy Vercel `READY`, endpoint health operativo e nessun errore runtime nelle ultime 24 ore al momento dell'audit.
 
 ## Limitazioni note del piano gratuito
