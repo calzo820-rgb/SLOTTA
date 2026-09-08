@@ -37,7 +37,7 @@ Ultimo audit tecnico: 8 settembre 2026.
 - [x] **OPS-01 — Rendere la build indipendente dall'inizializzazione delle credenziali.** Inizializzazione lazy e validazione esplicita applicate ai client Supabase e Resend; build senza credenziali, test, preview e produzione verificati.
 - [x] **OPS-02 — Logging strutturato e codici richiesta.** `requestId`, durata, route e codici errore pubblici stabili pubblicati e verificati sulle API pubbliche critiche e sul webhook Stripe, senza contenuti delle richieste.
 - [x] **OPS-03 — Monitoraggio automatico e allarmi.** Controllo sintetico gratuito attivo per home, health, protezione prenotazione e webhook; apre una issue su errore e la chiude al ripristino.
-- [ ] **OPS-04 — Test end-to-end.** Automatizzare i flussi cliente, proprietario e staff, inclusi prenotazione, conflitto, autorizzazioni, email simulata e webhook Stripe firmato.
+- [-] **OPS-04 — Test end-to-end.** Smoke test della build reale esteso a home, tester, login, recupero password, health, manifest, SEO e protezione billing; restano prenotazione completa, ruoli autenticati, email simulata e webhook Stripe firmato.
 - [x] **OPS-05 — Affidabilità email.** Errori Resend controllati, retry e deduplicazione pubblicati; dominio, SPF, DKIM e DMARC verificati con consegna reale in posta principale.
 
 ## P2 — requisiti commerciali
@@ -45,7 +45,7 @@ Ultimo audit tecnico: 8 settembre 2026.
 - [-] **BIZ-01 — Abbonamento SaaS del salone.** Fondazione in lavorazione: stato trial/piano, Checkout separato da Connect, portale cliente e webhook dedicato con tolleranza di 7 giorni; restano sospensione controllata, configurazione del prodotto/prezzo e collaudo Stripe.
 - [ ] **BIZ-02 — Console di assistenza.** Vista interna con stato tenant, abbonamento, Stripe Connect e anomalie, senza possibilità di accedere ai dati cliente oltre il necessario.
 - [ ] **LEGAL-01 — Revisione legale e privacy.** Far validare Privacy, Termini, ruoli GDPR, DPA, sub-responsabili, retention, rimborsi e dati identificativi dell'attività; rimuovere i riferimenti “beta” al lancio commerciale.
-- [ ] **UX-01 — Audit accessibilità e mobile.** Tastiera, focus, contrasto, screen reader, modali, errori dei form e principali telefoni/browser.
+- [-] **UX-01 — Audit accessibilità e mobile.** Prima tranche in lavorazione su etichette form, annunci degli errori, stati selezionati, dialog e target touch del flusso cliente; restano verifica browser/screen reader e area gestionale autenticata.
 - [ ] **PERF-01 — Core Web Vitals e carico.** Misurare LCP/INP/CLS, bundle e query; eseguire un test di carico controllato sulle disponibilità e sulle prenotazioni.
 - [ ] **DOC-01 — Manuali e supporto.** Guida gestore/staff, onboarding, FAQ, procedura incidenti, canale assistenza e checklist di attivazione cliente.
 

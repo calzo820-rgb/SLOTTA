@@ -49,6 +49,8 @@ export function ServiceSelectionStep({
             <button
               key={svc.id}
               type="button"
+              aria-pressed={selected}
+              aria-label={`${svc.name}, ${svc.duration_minutes} minuti, ${(svc.price_cents / 100).toFixed(2)} euro`}
               onClick={() => onSelectService(svc.id)}
               className={[
                 'group rounded-3xl border bg-white text-left shadow-sm transition-all duration-200',
