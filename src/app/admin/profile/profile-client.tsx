@@ -28,6 +28,13 @@ type StripeConnectStatus = {
   disabled_reason: string | null
   requirements: unknown
 }
+type DeletionRequest = {
+  id: string
+  status: 'scheduled'
+  requested_at: string
+  scheduled_for: string
+  cancelled_at: null
+}
 const LOGO_BUCKET = 'logos'
 async function uploadLogoForTenant(file: File, tenantId: string): Promise<string> {
   const ext = file.name.split('.').pop() || 'jpg'
@@ -88,6 +95,11 @@ export default function ProfileClient({ tenantId }: { tenantId: string }) {
   const [msg, setMsg] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [exporting, setExporting] = useState(false)
+  const [deletionRequest, setDeletionRequest] = useState<DeletionRequest | null>(null)
+  const [deletionLoading, setDeletionLoading] = useState(true)
+  const [deletionSubmitting, setDeletionSubmitting] = useState(false)
+  const [deletionConfirmation, setDeletionConfirmation] = useState('')
+  const [exportAcknowledged, setExportAcknowledged] = useState(false)
   const [connectLoading, setConnectLoading] = useState(false)
 const [connectError, setConnectError] = useState<string | null>(null)
 const [connectStatus, setConnectStatus] = useState<StripeConnectStatus | null>(null)
@@ -146,6 +158,9 @@ function toggleMobileSection(section: keyof typeof mobileSections) {
 useEffect(() => {
   loadStripeConnectStatus()
    
+}, [tenantId])
+useEffect(() => {
+  loadDeletionRequest()
 }, [tenantId])
 
   function updateField<K extends keyof TenantProfile>(key: K, value: TenantProfile[K]) {
@@ -282,6 +297,65 @@ async function exportTenantData() {
     setError(e instanceof Error ? e.message : 'Impossibile esportare i dati.')
   } finally {
     setExporting(false)
+  }
+}
+
+async function loadDeletionRequest() {
+  try {
+    setDeletionLoading(true)
+    const response = await fetch('/api/admin/account-deletion', { cache: 'no-store' })
+    const payload = await response.json().catch(() => null)
+    if (!response.ok) throw new Error(payload?.error || 'Impossibile controllare la richiesta.')
+    setDeletionRequest(payload?.request ?? null)
+  } catch (e: unknown) {
+    setError(e instanceof Error ? e.message : 'Impossibile controllare la richiesta.')
+  } finally {
+    setDeletionLoading(false)
+  }
+}
+
+async function scheduleAccountDeletion() {
+  if (!profile || deletionSubmitting) return
+
+  try {
+    setDeletionSubmitting(true)
+    setError(null)
+    const response = await fetch('/api/admin/account-deletion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        confirmation: deletionConfirmation,
+        export_acknowledged: exportAcknowledged,
+      }),
+    })
+    const payload = await response.json().catch(() => null)
+    if (!response.ok) throw new Error(payload?.error || 'Impossibile programmare la cancellazione.')
+    setDeletionRequest(payload.request)
+    setDeletionConfirmation('')
+    setExportAcknowledged(false)
+    setMsg('Richiesta registrata. Puoi annullarla durante i prossimi 30 giorni.')
+  } catch (e: unknown) {
+    setError(e instanceof Error ? e.message : 'Impossibile programmare la cancellazione.')
+  } finally {
+    setDeletionSubmitting(false)
+  }
+}
+
+async function cancelAccountDeletion() {
+  if (deletionSubmitting) return
+
+  try {
+    setDeletionSubmitting(true)
+    setError(null)
+    const response = await fetch('/api/admin/account-deletion', { method: 'DELETE' })
+    const payload = await response.json().catch(() => null)
+    if (!response.ok) throw new Error(payload?.error || 'Impossibile annullare la richiesta.')
+    setDeletionRequest(null)
+    setMsg('Richiesta di cancellazione annullata.')
+  } catch (e: unknown) {
+    setError(e instanceof Error ? e.message : 'Impossibile annullare la richiesta.')
+  } finally {
+    setDeletionSubmitting(false)
   }
 }
   async function saveProfile() {
@@ -825,7 +899,7 @@ async function exportTenantData() {
               <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
                 <div className="hidden border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 md:block">
                   <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">Dati e privacy</p>
-                  <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">Esporta i dati</h2>
+                  <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">Gestisci i dati</h2>
                 </div>
 
                 <button
@@ -836,7 +910,7 @@ async function exportTenantData() {
                 >
                   <div>
                     <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">Dati e privacy</p>
-                    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">Esporta i dati</h2>
+                    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">Gestisci i dati</h2>
                   </div>
                   <span aria-hidden="true" className="text-sm font-black text-slate-400">
                     {mobileSections.data ? '▲' : '▼'}
@@ -856,6 +930,68 @@ async function exportTenantData() {
                     >
                       {exporting ? 'Preparazione…' : 'Scarica i miei dati'}
                     </button>
+
+                    <div className="mt-3 border-t border-slate-200 pt-5">
+                      <h3 className="text-base font-black text-[#0F1D2D]">Cancellazione dell’attività</h3>
+                      {deletionLoading ? (
+                        <p className="mt-2 text-sm text-slate-600">Controllo richiesta…</p>
+                      ) : deletionRequest ? (
+                        <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                          <p className="font-black text-amber-900">Cancellazione programmata</p>
+                          <p className="mt-1 text-sm leading-6 text-amber-900">
+                            La richiesta potrà essere completata dal{' '}
+                            {new Date(deletionRequest.scheduled_for).toLocaleDateString('it-IT')}.
+                            Fino ad allora l’attività rimane disponibile e puoi annullare la richiesta.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={cancelAccountDeletion}
+                            disabled={deletionSubmitting}
+                            className="mt-3 min-h-[48px] w-full rounded-2xl border border-amber-300 bg-white px-4 py-3 text-sm font-black text-amber-900 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deletionSubmitting ? 'Annullamento…' : 'Annulla richiesta di cancellazione'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="mt-3 grid gap-3">
+                          <p className="text-sm leading-6 text-slate-600">
+                            La cancellazione viene programmata dopo 30 giorni. Prima scarica i dati che vuoi conservare.
+                          </p>
+                          <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={exportAcknowledged}
+                              onChange={event => setExportAcknowledged(event.target.checked)}
+                              className="mt-1 h-5 w-5"
+                            />
+                            Ho valutato l’esportazione e so che, dopo la cancellazione definitiva, i dati non saranno recuperabili.
+                          </label>
+                          <label htmlFor="account-deletion-confirmation" className="text-sm font-bold text-slate-700">
+                            Per confermare, scrivi: <span className="font-black">{profile?.name}</span>
+                          </label>
+                          <input
+                            id="account-deletion-confirmation"
+                            value={deletionConfirmation}
+                            onChange={event => setDeletionConfirmation(event.target.value)}
+                            autoComplete="off"
+                            className="min-h-[48px] w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                          />
+                          <button
+                            type="button"
+                            onClick={scheduleAccountDeletion}
+                            disabled={
+                              deletionSubmitting ||
+                              !exportAcknowledged ||
+                              deletionConfirmation.trim().toLocaleLowerCase('it-IT') !==
+                                (profile?.name || '').trim().toLocaleLowerCase('it-IT')
+                            }
+                            className="min-h-[48px] w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-black text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {deletionSubmitting ? 'Registrazione…' : 'Programma cancellazione account'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </section>
