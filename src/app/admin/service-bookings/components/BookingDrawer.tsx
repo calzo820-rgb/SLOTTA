@@ -82,9 +82,6 @@ useEffect(() => {
   if (!open || !booking?.id || booking.manager_seen_at || !onMarkSeen) return
 
   onMarkSeen(booking.id)
-    .then(() => {
-      window.dispatchEvent(new Event('slotta:booking-seen'))
-    })
     .catch(error => {
       console.error('Errore mark booking seen:', error)
     })

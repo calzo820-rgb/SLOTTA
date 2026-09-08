@@ -50,12 +50,11 @@ const loadPendingCount = useCallback(async () => {
     .from('service_bookings')
     .select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenantId)
-    .is('manager_seen_at', null)
-    .neq('status', 'cancelled')
+    .eq('status', 'pending')
     .or('checkout_pending.is.null,checkout_pending.eq.false')
 
   if (error) {
-    console.error('Errore conteggio prenotazioni non viste:', error)
+    console.error('Errore conteggio prenotazioni da gestire:', error)
     return
   }
 
@@ -66,18 +65,6 @@ const loadPendingCount = useCallback(async () => {
     if (!tenantId) return
     loadPendingCount()
   }, [tenantId, loadPendingCount])
-
-  useEffect(() => {
-    function handleBookingSeen() {
-      setPendingCount(current => Math.max(0, current - 1))
-    }
-
-    window.addEventListener('slotta:booking-seen', handleBookingSeen)
-
-    return () => {
-      window.removeEventListener('slotta:booking-seen', handleBookingSeen)
-    }
-  }, [])
 
   useEffect(() => {
     if (!tenantId) return

@@ -8,6 +8,7 @@ type Props = {
   serviceById: Record<string, Service>
   staffNameById: Record<string, string>
   selectedSet: Set<string>
+  newPaidBookingSet: Set<string>
   onToggleSelected: (id: string) => void
   onOpenBooking: (id: string) => void
 }
@@ -18,6 +19,7 @@ export function BookingMobileCards({
   serviceById,
   staffNameById,
   selectedSet,
+  newPaidBookingSet,
   onToggleSelected,
   onOpenBooking,
 }: Props) {
@@ -39,6 +41,7 @@ export function BookingMobileCards({
         bookings.map(b => {
           const svc = serviceById[b.service_id]
           const isPending = b.status === 'pending'
+          const isNewPaid = newPaidBookingSet.has(b.id)
           const sLabel = statusLabel(b.status)
           const pLabel = payLabel(b.payment_status)
           const staffName = b.staff_id
@@ -52,6 +55,8 @@ export function BookingMobileCards({
                 'relative w-full rounded-3xl border p-4 text-left shadow-sm transition',
                 isPending
                   ? 'border-amber-200 bg-amber-50'
+                  : isNewPaid
+                  ? 'border-teal-200 bg-teal-50'
                   : selectedSet.has(b.id)
                   ? 'border-[#1FA7A6] bg-[#F3FBFB]'
                   : 'border-slate-200 bg-white',
@@ -120,9 +125,12 @@ export function BookingMobileCards({
                     </div>
 
                     <div className="mt-2 flex flex-col items-end gap-1">
+                      {isNewPaid ? (
+                        <Badge tone="green">Nuova pagata</Badge>
+                      ) : null}
                       <Badge tone={pLabel.tone}>{pLabel.text}</Badge>
                       <Badge tone={sLabel.tone}>
-                        {isPending ? 'Nuovo' : sLabel.text}
+                        {isPending ? 'Da gestire' : sLabel.text}
                       </Badge>
                     </div>
                   </div>
