@@ -13,6 +13,7 @@ type Props = {
   serviceById: Record<string, Service>
   staffNameById: Record<string, string>
   selectedSet: Set<string>
+  newPaidBookingSet: Set<string>
   allVisibleSelected: boolean
 
   onToggleAllVisible: () => void
@@ -31,6 +32,7 @@ export function BookingsTable({
   serviceById,
   staffNameById,
   selectedSet,
+  newPaidBookingSet,
   allVisibleSelected,
   onToggleAllVisible,
   onToggleSelected,
@@ -87,7 +89,7 @@ export function BookingsTable({
           {bookings.map(b => {
             const svc = serviceById[b.service_id]
             const isPending = b.status === 'pending'
-            const isNewForManager = b.manager_seen_at == null && b.status !== 'cancelled'
+            const isNewForManager = newPaidBookingSet.has(b.id)
             const sLabel = statusLabel(b.status)
             const pLabel = payLabel(b.payment_status)
 
@@ -146,7 +148,7 @@ export function BookingsTable({
     {isPending ? (
       <Badge tone="amber">Da gestire</Badge>
     ) : (
-      <Badge tone="green">Nuova</Badge>
+      <Badge tone="green">Nuova pagata</Badge>
     )}
   </div>
 )}

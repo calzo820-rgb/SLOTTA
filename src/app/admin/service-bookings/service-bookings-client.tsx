@@ -3,6 +3,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { isStaffOverlapError } from '@/lib/bookingConflict'
+import {
+  requiresManagerAction,
+  shouldAutoAcknowledgePaidBooking,
+} from '@/lib/bookingNotifications'
 import type {
   Booking,
   Service,
@@ -61,6 +65,8 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export default function ServiceBookingsClient({ tenantId }: { tenantId: string }) {
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [newPaidBookingIds, setNewPaidBookingIds] = useState<string[]>([])
+  const autoAcknowledgedBookingIdsRef = useRef(new Set<string>())
   const [services, setServices] = useState<Service[]>([])
   const [staffNameById, setStaffNameById] = useState<Record<string, string>>({})
 const [soundEnabled, setSoundEnabled] = useState(false)
@@ -391,6 +397,54 @@ useEffect(() => {
   loadBookingsData()
 }, [tenantId, loadBookingsData])
 
+useEffect(() => {
+  autoAcknowledgedBookingIdsRef.current.clear()
+  setNewPaidBookingIds([])
+}, [tenantId])
+
+useEffect(() => {
+  if (!tenantId) return
+
+  const ids = bookings
+    .filter(
+      booking =>
+        shouldAutoAcknowledgePaidBooking(booking) &&
+        !autoAcknowledgedBookingIdsRef.current.has(booking.id),
+    )
+    .map(booking => booking.id)
+
+  if (ids.length === 0) return
+
+  ids.forEach(id => autoAcknowledgedBookingIdsRef.current.add(id))
+  setNewPaidBookingIds(current => Array.from(new Set([...current, ...ids])))
+
+  const seenAt = new Date().toISOString()
+
+  void supabase
+    .from('service_bookings')
+    .update({ manager_seen_at: seenAt })
+    .eq('tenant_id', tenantId)
+    .in('id', ids)
+    .then(({ error: acknowledgeError }) => {
+      if (acknowledgeError) {
+        ids.forEach(id => autoAcknowledgedBookingIdsRef.current.delete(id))
+        console.error(
+          'Errore archiviazione prenotazioni online già pagate:',
+          acknowledgeError,
+        )
+        return
+      }
+
+      setBookings(current =>
+        current.map(booking =>
+          ids.includes(booking.id)
+            ? { ...booking, manager_seen_at: seenAt }
+            : booking,
+        ),
+      )
+    })
+}, [bookings, tenantId])
+
   useEffect(() => {
   if (!tenantId) return
 
@@ -453,11 +507,13 @@ await loadBookingsData(true)
 
           return list
         }, [bookings, dateFilter, onlyPending, onlyUnpaid, searchTerm])
-       const pendingBadgeCount = useMemo(() => {
-  return bookings.filter(
-    b => b.status === 'pending' && b.checkout_pending !== true,
-  ).length
+  const pendingBadgeCount = useMemo(() => {
+  return bookings.filter(requiresManagerAction).length
 }, [bookings])
+  const newPaidBookingSet = useMemo(
+    () => new Set(newPaidBookingIds),
+    [newPaidBookingIds],
+  )
 
         useEffect(() => {
           updateAppBadge(pendingBadgeCount)
@@ -896,6 +952,7 @@ async function deleteSelectedBookings() {
   serviceById={serviceById}
   staffNameById={staffNameById}
   selectedSet={selectedSet}
+  newPaidBookingSet={newPaidBookingSet}
   onToggleSelected={toggleSelectedBooking}
   onOpenBooking={id => {
     setSelectedBookingId(id)
@@ -910,6 +967,7 @@ async function deleteSelectedBookings() {
   serviceById={serviceById}
   staffNameById={staffNameById}
   selectedSet={selectedSet}
+  newPaidBookingSet={newPaidBookingSet}
   allVisibleSelected={
     filteredBookings.length > 0 &&
     filteredBookings.every(b => selectedSet.has(b.id))
