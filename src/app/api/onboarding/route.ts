@@ -141,6 +141,7 @@ const { error: settingsErr } = await supabaseAdmin.from("tenant_settings").upser
     timezone,
     slot_minutes: 30,
     lead_minutes: 60,
+    customer_cancellation_notice_hours: 24,
     service_staff_count: 1,
     payment_mode_default: "in_person",
     staff_assign_mode: "first_free",

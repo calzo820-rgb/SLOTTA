@@ -15,6 +15,7 @@ import { Card } from './components/Card'
 type TenantSettingsRow = {
   slot_minutes?: number | string | null
   lead_minutes?: number | string | null
+  customer_cancellation_notice_hours?: number | string | null
   timezone?: string | null
   service_staff_count?: number | string | null
   payment_mode_default?: Settings['payment_mode_default'] | null
@@ -33,6 +34,7 @@ export default function HoursClient({ tenantId }: { tenantId: string }) {
   const [settings, setSettings] = useState<Settings>({
   slot_minutes: '30',
   lead_minutes: '30',
+  customer_cancellation_notice_hours: '24',
   timezone: 'Europe/Rome',
   service_staff_count: '1',
   payment_mode_default: 'in_person',
@@ -114,6 +116,9 @@ function toggleMobileSection(section: keyof typeof mobileSections) {
           setSettings({
   slot_minutes: String(stRow?.slot_minutes ?? 30),
   lead_minutes: String(stRow?.lead_minutes ?? 30),
+  customer_cancellation_notice_hours: String(
+    stRow?.customer_cancellation_notice_hours ?? 24,
+  ),
   timezone: stRow?.timezone || 'Europe/Rome',
   service_staff_count: String(stRow?.service_staff_count ?? 1),
   payment_mode_default: (stRow?.payment_mode_default ||
@@ -213,6 +218,9 @@ hh.forEach(r => map.set(r.dow, r))
 
   const slotMinutesValue = Number(settings.slot_minutes)
   const leadTimeValue = Number(settings.lead_minutes)
+  const cancellationNoticeValue = Number(
+    settings.customer_cancellation_notice_hours,
+  )
   const staffCountValue = Number(settings.service_staff_count)
 
   if (
@@ -234,6 +242,16 @@ hh.forEach(r => map.set(r.dow, r))
   }
 
   if (
+    !settings.customer_cancellation_notice_hours.trim() ||
+    !Number.isInteger(cancellationNoticeValue) ||
+    cancellationNoticeValue < 0 ||
+    cancellationNoticeValue > 168
+  ) {
+    setError('Seleziona un preavviso di cancellazione valido.')
+    return
+  }
+
+  if (
     !settings.service_staff_count.trim() ||
     !Number.isFinite(staffCountValue) ||
     staffCountValue <= 0
@@ -251,6 +269,7 @@ hh.forEach(r => map.set(r.dow, r))
           tenant_id: tenantId,
           slot_minutes: slotMinutesValue,
 lead_minutes: leadTimeValue,
+customer_cancellation_notice_hours: cancellationNoticeValue,
 timezone: settings.timezone,
 service_staff_count: staffCountValue,
           payment_mode_default: settings.payment_mode_default,
@@ -301,6 +320,7 @@ service_staff_count: staffCountValue,
   }, [rows])
 const slotMinutesValue = Number(settings.slot_minutes)
 const leadTimeValue = Number(settings.lead_minutes)
+const cancellationNoticeValue = Number(settings.customer_cancellation_notice_hours)
 const staffCountValue = Number(settings.service_staff_count)
 
 const settingsInvalid =
@@ -310,6 +330,10 @@ const settingsInvalid =
   !settings.lead_minutes.trim() ||
   !Number.isFinite(leadTimeValue) ||
   leadTimeValue < 0 ||
+  !settings.customer_cancellation_notice_hours.trim() ||
+  !Number.isInteger(cancellationNoticeValue) ||
+  cancellationNoticeValue < 0 ||
+  cancellationNoticeValue > 168 ||
   !settings.service_staff_count.trim() ||
   !Number.isFinite(staffCountValue) ||
   staffCountValue <= 0
@@ -431,6 +455,39 @@ const settingsInvalid =
       <option value="120">Almeno 2 ore prima</option>
       <option value="240">Almeno 4 ore prima</option>
       <option value="1440">Almeno 1 giorno prima</option>
+    </select>
+  </Field>
+
+  <Field
+    label="Preavviso minimo per annullare"
+    hint="Il cliente potrà annullare autonomamente solo prima di questo limite. Le prenotazioni già pagate richiedono sempre il contatto con l’attività."
+  >
+    <select
+      value={settings.customer_cancellation_notice_hours}
+      onChange={e => {
+        setSettings(s => ({
+          ...s,
+          customer_cancellation_notice_hours: e.target.value,
+        }))
+        setSavedFlag(false)
+      }}
+      className={[
+        'h-11 rounded-2xl border bg-white px-4 text-sm outline-none transition focus:ring-2',
+        !settings.customer_cancellation_notice_hours.trim() ||
+        Number(settings.customer_cancellation_notice_hours) < 0
+          ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
+          : 'border-slate-200 focus:border-[#1FA7A6] focus:ring-[#1FA7A6]/10',
+      ].join(' ')}
+    >
+      <option value="0">Fino all’orario dell’appuntamento</option>
+      <option value="1">Almeno 1 ora prima</option>
+      <option value="2">Almeno 2 ore prima</option>
+      <option value="4">Almeno 4 ore prima</option>
+      <option value="12">Almeno 12 ore prima</option>
+      <option value="24">Almeno 1 giorno prima</option>
+      <option value="48">Almeno 2 giorni prima</option>
+      <option value="72">Almeno 3 giorni prima</option>
+      <option value="168">Almeno 7 giorni prima</option>
     </select>
   </Field>
 

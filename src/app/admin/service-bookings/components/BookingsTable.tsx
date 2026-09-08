@@ -90,6 +90,7 @@ export function BookingsTable({
             const svc = serviceById[b.service_id]
             const isPending = b.status === 'pending'
             const isNewForManager = newPaidBookingSet.has(b.id)
+            const isCustomerCancelled = Boolean(b.customer_cancelled_at)
             const sLabel = statusLabel(b.status)
             const pLabel = payLabel(b.payment_status)
 
@@ -105,7 +106,9 @@ export function BookingsTable({
                 onClick={() => onOpenBooking(b.id)}
                 className={[
   'cursor-pointer border-b border-slate-100 transition',
-  isPending
+  isCustomerCancelled
+    ? 'bg-red-50/70 hover:bg-red-100/60'
+    : isPending
     ? 'bg-amber-50/70 hover:bg-amber-100/60'
     : isNewForManager
       ? 'bg-teal-50/80 ring-1 ring-inset ring-teal-200 hover:bg-teal-100/70'
@@ -128,11 +131,15 @@ export function BookingsTable({
                 </td>
 
                 <td className="relative whitespace-nowrap px-4 py-4 align-top">
-                  {(isPending || isNewForManager) && (
+                  {(isCustomerCancelled || isPending || isNewForManager) && (
   <span
     className={[
       'absolute bottom-0 left-0 top-0 w-1',
-      isPending ? 'bg-[#FFC145]' : 'bg-[#1FA7A6]',
+      isCustomerCancelled
+        ? 'bg-red-500'
+        : isPending
+          ? 'bg-[#FFC145]'
+          : 'bg-[#1FA7A6]',
     ].join(' ')}
   />
 )}
@@ -143,9 +150,11 @@ export function BookingsTable({
                     {fmtTime(b.booking_time)}
                   </div>
 
-                  {(isPending || isNewForManager) && (
+                  {(isCustomerCancelled || isPending || isNewForManager) && (
   <div className="mt-2">
-    {isPending ? (
+    {isCustomerCancelled ? (
+      <Badge tone="red">Annullata dal cliente</Badge>
+    ) : isPending ? (
       <Badge tone="amber">Da gestire</Badge>
     ) : (
       <Badge tone="green">Nuova pagata</Badge>

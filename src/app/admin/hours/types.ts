@@ -11,6 +11,7 @@ export type HoursRow = {
 export type Settings = {
   slot_minutes: string
   lead_minutes: string
+  customer_cancellation_notice_hours: string
   timezone: string
   service_staff_count: string
   payment_mode_default: 'online' | 'in_person' | 'client_choice'
