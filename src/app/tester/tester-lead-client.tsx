@@ -293,6 +293,7 @@ export default function TesterLeadClient() {
               Nome salone
             </span>
             <input
+              required
               value={form.salonName}
               onChange={e =>
                 setForm(prev => ({ ...prev, salonName: e.target.value }))
@@ -308,6 +309,7 @@ export default function TesterLeadClient() {
               Nome referente
             </span>
             <input
+              required
               value={form.contactName}
               onChange={e =>
                 setForm(prev => ({ ...prev, contactName: e.target.value }))
@@ -323,6 +325,8 @@ export default function TesterLeadClient() {
               Telefono / WhatsApp
             </span>
             <input
+              required
+              type="tel"
               value={form.phone}
               onChange={e =>
                 setForm(prev => ({ ...prev, phone: e.target.value }))
@@ -337,6 +341,7 @@ export default function TesterLeadClient() {
           <label className="grid gap-1.5">
             <span className="text-sm font-black text-[#0F1D2D]">Comune</span>
             <input
+              required
               value={form.city}
               onChange={e =>
                 setForm(prev => ({ ...prev, city: e.target.value }))
@@ -378,7 +383,7 @@ export default function TesterLeadClient() {
           </label>
 
           {error ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+            <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
               {error}
             </div>
           ) : null}

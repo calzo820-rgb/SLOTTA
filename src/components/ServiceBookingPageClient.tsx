@@ -798,11 +798,12 @@ return effectivePaymentMode === 'online' ? 'Prenota e paga ora' : 'Conferma appu
                         </div>
 
                         <div className="grid gap-2">
-                          <label className="text-sm font-bold text-[#0F1D2D]">
+                          <label htmlFor="booking-date" className="text-sm font-bold text-[#0F1D2D]">
                             Giorno
                           </label>
                           <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 transition focus-within:border-[#1FA7A6] focus-within:ring-2 focus-within:ring-[#1FA7A6]/10">
                             <input
+                              id="booking-date"
                               type="date"
                               value={date}
                               min={today}
@@ -846,11 +847,12 @@ return effectivePaymentMode === 'online' ? 'Prenota e paga ora' : 'Conferma appu
                             ) : (
                               <div className="grid gap-2">
                                 <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4">
-                                  <p className="text-sm font-black text-[#0F1D2D]">
+                                  <label htmlFor="booking-staff" className="text-sm font-black text-[#0F1D2D]">
                                     Scegli il tuo operatore
-                                  </p>
+                                  </label>
 
                                   <select
+                                    id="booking-staff"
                                     value={selectedStaffId}
                                     onChange={e => {
                                       // Cast the selected value to the same union type as selectedStaffId
@@ -894,6 +896,7 @@ return effectivePaymentMode === 'online' ? 'Prenota e paga ora' : 'Conferma appu
 className={`grid gap-3 text-sm ${
   slotsRefreshing ? 'opacity-70' : 'opacity-100'
 } transition-opacity`}
+                          aria-busy={loadingSlots || slotsRefreshing}
                         >
                           <div>
                             <p className="text-sm font-bold text-[#0F1D2D]">Orario</p>
@@ -903,7 +906,7 @@ className={`grid gap-3 text-sm ${
                           </div>
 
                           {errorSlots && (
-                            <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
+                            <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
                               {errorSlots}
                             </div>
                           )}
@@ -948,6 +951,8 @@ className={`grid gap-3 text-sm ${
         setSelectedTime(s.time)
       }}
       disabled={isDisabled}
+      aria-pressed={isSelected}
+      aria-label={`Ore ${s.time}${s.disabled ? `, ${getSlotReasonLabel(s.reason)}` : ''}`}
       title={s.disabled ? getSlotReasonLabel(s.reason) : ''}
       className={[
         'flex min-h-[44px] items-center justify-center rounded-2xl border px-3 py-2 text-sm font-black transition',
@@ -986,6 +991,8 @@ className={`grid gap-3 text-sm ${
         setSelectedTime(s.time)
       }}
       disabled={isDisabled}
+      aria-pressed={isSelected}
+      aria-label={`Ore ${s.time}${s.disabled ? `, ${getSlotReasonLabel(s.reason)}` : ''}`}
       title={s.disabled ? getSlotReasonLabel(s.reason) : ''}
       className={[
         'flex min-h-[44px] items-center justify-center rounded-2xl border px-3 py-2 text-sm font-black transition',
@@ -1023,11 +1030,15 @@ className={`grid gap-3 text-sm ${
 
                       <div className="grid gap-3 text-sm">
   <div className="grid gap-1">
-    <label className="text-sm font-bold text-[#0F1D2D]">
+    <label htmlFor="booking-name" className="text-sm font-bold text-[#0F1D2D]">
       Nome *
     </label>
 
     <input
+      id="booking-name"
+      autoComplete="name"
+      aria-invalid={Boolean(nameError)}
+      aria-describedby={nameError ? 'booking-name-error' : undefined}
       value={name}
       onChange={e => setName(e.target.value)}
       placeholder="Nome e cognome"
@@ -1036,19 +1047,23 @@ className={`grid gap-3 text-sm ${
     />
 
     {nameError ? (
-      <div className="text-xs font-medium text-red-600">
+      <div id="booking-name-error" role="alert" className="text-xs font-medium text-red-600">
         {nameError}
       </div>
     ) : null}
   </div>
 
   <div className="grid gap-1">
-    <label className="text-sm font-bold text-[#0F1D2D]">
+    <label htmlFor="booking-phone" className="text-sm font-bold text-[#0F1D2D]">
       Telefono *
     </label>
 
     <input
+      id="booking-phone"
     type="tel"
+      autoComplete="tel"
+      aria-invalid={Boolean(phoneError)}
+      aria-describedby={phoneError ? 'booking-phone-error' : 'booking-phone-help'}
       value={phone}
       onChange={e => setPhone(e.target.value)}
       placeholder="333 1234567"
@@ -1058,25 +1073,28 @@ className={`grid gap-3 text-sm ${
     />
 
     {phoneError ? (
-      <div className="text-xs font-medium text-red-600">
+      <div id="booking-phone-error" role="alert" className="text-xs font-medium text-red-600">
         {phoneError}
       </div>
     ) : (
-      <div className="text-xs text-slate-500">
+      <div id="booking-phone-help" className="text-xs text-slate-500">
         Usato solo in caso di necessità, ad esempio per variazioni di orario.
       </div>
     )}
   </div>
 
   <div className="grid gap-1">
-    <label className="text-sm font-bold text-[#0F1D2D]">
+    <label htmlFor="booking-email" className="text-sm font-bold text-[#0F1D2D]">
       Email *
     </label>
 
 <input
-  type="text"
+  id="booking-email"
+  type="email"
   inputMode="email"
   autoComplete="email"
+  aria-invalid={Boolean(emailError)}
+  aria-describedby={emailError ? 'booking-email-error' : 'booking-email-help'}
   value={email}
   onChange={e => setEmail(e.target.value)}
   placeholder="nome@email.it"
@@ -1085,22 +1103,23 @@ className={`grid gap-3 text-sm ${
 />
 
     {emailError ? (
-      <div className="text-xs font-medium text-red-600">
+      <div id="booking-email-error" role="alert" className="text-xs font-medium text-red-600">
         {emailError}
       </div>
     ) : (
-      <div className="text-xs text-slate-500">
+      <div id="booking-email-help" className="text-xs text-slate-500">
         Riceverai qui conferma, aggiornamenti e promemoria della prenotazione.
       </div>
     )}
   </div>
 
     <div className="grid gap-1">
-    <label className="text-sm font-bold text-[#0F1D2D]">
+    <label htmlFor="booking-note" className="text-sm font-bold text-[#0F1D2D]">
       Note <span className="font-medium text-slate-400">(opzionale)</span>
     </label>
 
     <textarea
+      id="booking-note"
       value={note}
       onChange={e => setNote(e.target.value)}
       placeholder="Richieste particolari o informazioni utili…"
@@ -1151,6 +1170,7 @@ className={`grid gap-3 text-sm ${
                             <div className="grid gap-2 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-2">
                               <button
                                 type="button"
+                                aria-pressed={paymentModeChoice === 'online'}
                                 onClick={() => setPaymentModeChoice('online')}
                                 className={[
                                   'w-full rounded-2xl border p-3 text-left transition-all duration-200',
@@ -1193,6 +1213,7 @@ className={`grid gap-3 text-sm ${
 
                               <button
                                 type="button"
+                                aria-pressed={paymentModeChoice === 'in_person'}
                                 onClick={() => setPaymentModeChoice('in_person')}
                                 className={[
                                   'w-full rounded-2xl border p-3 text-left transition-all duration-200',
@@ -1253,13 +1274,13 @@ className={`grid gap-3 text-sm ${
       {/* REVIEW MODAL */}
       {reviewOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F1D2D]/60 p-4 backdrop-blur-sm">
-          <div className="grid w-full max-w-md gap-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-labelledby="booking-review-title" className="grid w-full max-w-md gap-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
                   Ultimo controllo
                 </p>
-                <h3 className="text-xl font-black text-[#0F1D2D]">
+                <h3 id="booking-review-title" className="text-xl font-black text-[#0F1D2D]">
                   Controlla il riepilogo
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
