@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { sendPushNotificationsToTenant } from '@/lib/sendPushNotifications'
 import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
 import { sendTransactionalEmail } from '@/lib/transactionalEmail'
+import { formatBookingDate } from '@/lib/bookingDisplay'
 import {
   getPaidCheckoutDetails,
   isStripeFinalizationError,
@@ -198,7 +199,7 @@ async function handlePost(req: Request) {
                 <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f8fafc;">
                   <p><strong>Attività:</strong> ${escapeHtml(businessName)}</p>
                   <p><strong>Servizio:</strong> ${escapeHtml(serviceName)}</p>
-                  <p><strong>Data:</strong> ${escapeHtml(hold.booking_date)}</p>
+                  <p><strong>Data:</strong> ${escapeHtml(formatBookingDate(hold.booking_date))}</p>
                   <p><strong>Ora:</strong> ${escapeHtml(String(hold.booking_time).slice(0, 5))}</p>
                   <p><strong>Prezzo:</strong> ${escapeHtml(price)}</p>
                   <p><strong>Pagamento:</strong> online completato</p>
@@ -242,7 +243,7 @@ async function handlePost(req: Request) {
                   <p><strong>Telefono:</strong> ${escapeHtml(hold.customer_phone || 'Non indicato')}</p>
                   <p><strong>Email:</strong> ${escapeHtml(hold.customer_email || 'Non indicata')}</p>
                   <p><strong>Servizio:</strong> ${escapeHtml(serviceName)}</p>
-                  <p><strong>Data:</strong> ${escapeHtml(hold.booking_date)}</p>
+                  <p><strong>Data:</strong> ${escapeHtml(formatBookingDate(hold.booking_date))}</p>
                   <p><strong>Ora:</strong> ${escapeHtml(String(hold.booking_time).slice(0, 5))}</p>
                   <p><strong>Prezzo:</strong> ${escapeHtml(price)}</p>
                   <p><strong>Pagamento:</strong> online completato</p>

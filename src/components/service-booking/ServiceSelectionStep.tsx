@@ -77,12 +77,12 @@ export function ServiceSelectionStep({
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="truncate text-base font-black text-[#0F1D2D] md:text-lg">
+                      <h3 className="break-words text-base font-black text-[#0F1D2D] md:text-lg">
                         {svc.name}
                       </h3>
 
                       {svc.description && (
-                        <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">
+                        <p className="mt-1 break-words text-sm leading-5 text-slate-600">
                           {svc.description}
                         </p>
                       )}

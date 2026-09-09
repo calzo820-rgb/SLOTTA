@@ -7,6 +7,7 @@ import {
   createBookingManagementToken,
   hashBookingManagementToken,
 } from '@/lib/bookingManagement'
+import { formatBookingDate } from '@/lib/bookingDisplay'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -23,11 +24,7 @@ function escapeHtml(value: string) {
 }
 
 function fmtDate(d: string) {
-  try {
-    return new Date(`${d}T00:00:00`).toLocaleDateString('it-IT')
-  } catch {
-    return d
-  }
+  return formatBookingDate(d)
 }
 
 function fmtTime(t: string) {
