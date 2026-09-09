@@ -81,8 +81,8 @@ export async function runProductionChecks({
     { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' },
   )
   assert(
-    billingWebhook.status === 503,
-    `/api/webhooks/stripe-billing returned HTTP ${billingWebhook.status}; expected 503 until billing is configured`,
+    billingWebhook.status === 400 || billingWebhook.status === 503,
+    `/api/webhooks/stripe-billing returned unexpected HTTP ${billingWebhook.status}; expected 400 when configured or 503 when not configured`,
   )
   results.push({ check: '/api/webhooks/stripe-billing', status: billingWebhook.status })
 
