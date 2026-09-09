@@ -24,6 +24,7 @@ import {
 } from '@/lib/bookingConfirmationToken'
 import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
 import { sendTransactionalEmail } from '@/lib/transactionalEmail'
+import { formatBookingDate } from '@/lib/bookingDisplay'
 import {
   bookingManagementExpiry,
   buildBookingManagementUrl,
@@ -284,7 +285,7 @@ try {
             <strong>Servizio:</strong> ${escapeHtml(serviceName)}
           </p>
           <p style="margin: 0 0 10px;">
-            <strong>Data:</strong> ${escapeHtml(booking_date)}
+            <strong>Data:</strong> ${escapeHtml(formatBookingDate(booking_date))}
           </p>
           <p style="margin: 0 0 10px;">
             <strong>Orario:</strong> ${escapeHtml(booking_time.slice(0, 5))}
@@ -317,7 +318,36 @@ try {
   logApiEvent('booking_confirmation_email_failed', 'error')
 }
 }
-// 8) Invio notifica push al gestore
+// Email al gestore anche per il pagamento in salone.
+try {
+  const { data: ownerTenant } = await getSupabaseAdmin()
+    .from('tenants')
+    .select('name, contact_email')
+    .eq('id', tenant_id)
+    .maybeSingle()
+
+  if (ownerTenant?.contact_email) {
+    await sendTransactionalEmail({
+      from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+      to: ownerTenant.contact_email,
+      subject: `Nuova richiesta di prenotazione - ${ownerTenant.name || 'Slotta'}`,
+      html: `<div style="font-family:Arial,sans-serif;color:#0F1D2D;line-height:1.5">
+        <h2>Nuova richiesta di prenotazione</h2>
+        <p>È arrivata una nuova richiesta con pagamento in salone.</p>
+        <p><strong>Cliente:</strong> ${escapeHtml(customer_name)}</p>
+        <p><strong>Telefono:</strong> ${escapeHtml(cleanPhone || 'Non indicato')}</p>
+        <p><strong>Email:</strong> ${escapeHtml(cleanEmail || 'Non indicata')}</p>
+        <p><strong>Servizio:</strong> ${escapeHtml(svc?.name || 'Servizio')}</p>
+        <p><strong>Data:</strong> ${escapeHtml(formatBookingDate(booking_date))}</p>
+        <p><strong>Ora:</strong> ${escapeHtml(booking_time.slice(0, 5))}</p>
+        <p><strong>Pagamento:</strong> in salone</p>
+      </div>`,
+    }, `booking-owner-${inserted.id}`)
+  }
+} catch {
+  logApiEvent('booking_owner_email_failed', 'error')
+}
+// Invio notifica push al gestore
 // La push NON deve bloccare la prenotazione: se fallisce, la prenotazione resta valida.
 try {
   const { count: pendingCount } = await getSupabaseAdmin()
