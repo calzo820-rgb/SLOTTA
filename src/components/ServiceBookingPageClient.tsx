@@ -122,6 +122,13 @@ const [paymentModeChoice, setPaymentModeChoice] =
     return services.find(s => s.id === selectedServiceId) || null
   }, [services, selectedServiceId])
 
+  function handleBookingDateChange(value: string) {
+    setDate(value)
+    setSelectedTime('')
+    setIsClosedDay(false)
+    setErrorSlots(null)
+  }
+
   const durationByServiceId = useMemo(() => {
     const map: Record<string, number> = {}
     services.forEach(s => {
@@ -807,12 +814,8 @@ return effectivePaymentMode === 'online' ? 'Prenota e paga ora' : 'Conferma appu
                               type="date"
                               value={date}
                               min={today}
-                              onChange={e => {
-                                setDate(e.target.value)
-                                setSelectedTime('')
-                                setIsClosedDay(false)
-                                setErrorSlots(null)
-                              }}
+                              onInput={e => handleBookingDateChange(e.currentTarget.value)}
+                              onChange={e => handleBookingDateChange(e.currentTarget.value)}
                               className="w-full bg-transparent text-base outline-none md:text-sm"
                             />
                           </div>
