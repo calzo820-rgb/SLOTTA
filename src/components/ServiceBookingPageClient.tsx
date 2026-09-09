@@ -19,6 +19,7 @@ import type {
   PaymentModeEffective,
 } from './service-booking/types'
 import {
+  formatBookingDate,
   safeIsoTodayLocal,
 } from './service-booking/utils'
 import { BookingPageHeader } from './service-booking/BookingPageHeader'
@@ -1337,7 +1338,9 @@ className={`grid gap-3 text-sm ${
                   <div className="text-xs font-black uppercase tracking-wide text-slate-400">
                     Giorno
                   </div>
-                  <div className="font-bold text-[#0F1D2D]">{date || '—'}</div>
+                        <div className="font-bold text-[#0F1D2D]">
+                          {date ? formatBookingDate(date) : '—'}
+                        </div>
                 </div>
 
                 <div>
