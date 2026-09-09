@@ -16,6 +16,13 @@ test('production monitor verifies home, health and guarded critical endpoints', 
       return response({ status: 'ok', service: 'slotta-web' })
     }
     if (url.endsWith('/')) return new Response('<title>Slotta</title>')
+    if (url.endsWith('/tester')) return new Response('Vuoi essere ricontattato')
+    if (url.endsWith('/login')) return new Response('login')
+    if (url.endsWith('/forgot-password')) return new Response('Recupera la password')
+    if (url.endsWith('/manifest.json')) return new Response('{"name": "Slotta"}')
+    if (url.endsWith('/robots.txt')) return new Response('sitemap.xml')
+    if (url.endsWith('/sitemap.xml')) return new Response('https://www.slotta.it')
+    if (url.endsWith('/api/webhooks/stripe-billing')) return response({}, 503)
 
     const requestId = new Headers(init?.headers).get('x-request-id') || ''
     return response(
@@ -28,12 +35,19 @@ test('production monitor verifies home, health and guarded critical endpoints', 
   const results = await runProductionChecks({ baseUrl: 'https://example.test/', fetchImpl })
 
   assert.deepEqual(requested, [
-    '/',
-    '/api/health',
-    '/api/service-book',
-    '/api/webhooks/stripe',
-  ])
-  assert.equal(results.length, 4)
+      '/',
+      '/api/health',
+      '/tester',
+      '/login',
+      '/forgot-password',
+      '/manifest.json',
+      '/robots.txt',
+      '/sitemap.xml',
+      '/api/service-book',
+      '/api/webhooks/stripe',
+      '/api/webhooks/stripe-billing',
+    ])
+  assert.equal(results.length, 11)
 })
 
 test('production monitor fails when a critical endpoint is unavailable', async () => {

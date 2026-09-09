@@ -35,6 +35,25 @@ export async function runProductionChecks({
   assert(healthBody.service === 'slotta-web', 'health service marker is invalid')
   results.push({ check: 'health', status: health.status })
 
+  const pageChecks = [
+    ['tester', '/tester', 'Vuoi essere ricontattato'],
+    ['login', '/login', null],
+    ['forgot-password', '/forgot-password', 'Recupera la password'],
+    ['manifest', '/manifest.json', '"name": "Slotta"'],
+    ['robots', '/robots.txt', 'sitemap.xml'],
+    ['sitemap', '/sitemap.xml', 'https://www.slotta.it'],
+  ]
+
+  for (const [check, path, marker] of pageChecks) {
+    const response = await monitoredFetch(fetchImpl, `${normalizedBaseUrl}${path}`)
+    assert(response.status === 200, `${path} returned HTTP ${response.status}`)
+    if (marker) {
+      const body = await response.text()
+      assert(body.includes(marker), `${path} does not contain the expected marker`)
+    }
+    results.push({ check, status: response.status })
+  }
+
   for (const endpoint of ['/api/service-book', '/api/webhooks/stripe']) {
     const requestId = `monitor-${randomUUID()}`
     const response = await monitoredFetch(fetchImpl, `${normalizedBaseUrl}${endpoint}`, {
@@ -55,6 +74,17 @@ export async function runProductionChecks({
     assert(body.request_id === requestId, `${endpoint} returned a mismatched request ID`)
     results.push({ check: endpoint, status: response.status })
   }
+
+  const billingWebhook = await monitoredFetch(
+    fetchImpl,
+    `${normalizedBaseUrl}/api/webhooks/stripe-billing`,
+    { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' },
+  )
+  assert(
+    billingWebhook.status === 400 || billingWebhook.status === 503,
+    `/api/webhooks/stripe-billing returned unexpected HTTP ${billingWebhook.status}; expected 400 when configured or 503 when not configured`,
+  )
+  results.push({ check: '/api/webhooks/stripe-billing', status: billingWebhook.status })
 
   return results
 }

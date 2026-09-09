@@ -19,6 +19,7 @@ import type {
   PaymentModeEffective,
 } from './service-booking/types'
 import {
+  formatBookingDate,
   safeIsoTodayLocal,
 } from './service-booking/utils'
 import { BookingPageHeader } from './service-booking/BookingPageHeader'
@@ -121,6 +122,13 @@ const [paymentModeChoice, setPaymentModeChoice] =
   const selectedService = useMemo(() => {
     return services.find(s => s.id === selectedServiceId) || null
   }, [services, selectedServiceId])
+
+  function handleBookingDateChange(value: string) {
+    setDate(value)
+    setSelectedTime('')
+    setIsClosedDay(false)
+    setErrorSlots(null)
+  }
 
   const durationByServiceId = useMemo(() => {
     const map: Record<string, number> = {}
@@ -807,12 +815,8 @@ return effectivePaymentMode === 'online' ? 'Prenota e paga ora' : 'Conferma appu
                               type="date"
                               value={date}
                               min={today}
-                              onChange={e => {
-                                setDate(e.target.value)
-                                setSelectedTime('')
-                                setIsClosedDay(false)
-                                setErrorSlots(null)
-                              }}
+                              onInput={e => handleBookingDateChange(e.currentTarget.value)}
+                              onChange={e => handleBookingDateChange(e.currentTarget.value)}
                               className="w-full bg-transparent text-base outline-none md:text-sm"
                             />
                           </div>
@@ -1334,7 +1338,9 @@ className={`grid gap-3 text-sm ${
                   <div className="text-xs font-black uppercase tracking-wide text-slate-400">
                     Giorno
                   </div>
-                  <div className="font-bold text-[#0F1D2D]">{date || '—'}</div>
+                        <div className="font-bold text-[#0F1D2D]">
+                          {date ? formatBookingDate(date) : '—'}
+                        </div>
                 </div>
 
                 <div>
