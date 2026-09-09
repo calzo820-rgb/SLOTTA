@@ -269,6 +269,7 @@ async function handlePost(req: Request) {
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', tenantId)
           .eq('status', 'pending')
+          .is('manager_seen_at', null)
 
         await sendPushNotificationsToTenant(tenantId, {
           title: 'Nuova prenotazione pagata',
