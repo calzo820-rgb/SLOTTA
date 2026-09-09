@@ -17,18 +17,17 @@ let data = {
 
   event.waitUntil(
     (async () => {
-      // Aggiorna il numero rosso sull'icona dell'app, dove supportato
-      try {
-        const badgeCount = Number(data.badgeCount || 0)
-
-        if ('setAppBadge' in navigator && badgeCount > 0) {
-          await navigator.setAppBadge(badgeCount)
-        }
-
-        if ('clearAppBadge' in navigator && badgeCount === 0) {
-          await navigator.clearAppBadge()
-        }
-      } catch {}
+      // La pagina aggiorna il badge nel contesto Window, dove Android/Chrome
+      // espone in modo affidabile setAppBadge. Il service worker inoltra quindi
+      // il conteggio a tutte le pagine Slotta già aperte.
+      const badgeCount = Number(data.badgeCount || 0)
+      const windowClients = await clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      })
+      for (const client of windowClients) {
+        client.postMessage({ type: 'slotta-badge-count', count: badgeCount })
+      }
 
       await self.registration.showNotification(data.title || 'Slotta', {
   body: data.body || '',
