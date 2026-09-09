@@ -362,6 +362,7 @@ await sendPushNotificationsToTenant(tenant_id, {
   body: `${customer_name} ha richiesto un nuovo appuntamento.`,
   url: '/admin/service-bookings',
   badgeCount: pendingCount ?? 1,
+  tag: `slotta-new-booking-${inserted.id}`,
 })
 } catch {
   logApiEvent('booking_push_notification_failed', 'error')
