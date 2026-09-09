@@ -40,7 +40,7 @@ export function BookingPageHeader({
           )}
 
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-black tracking-tight text-[#0F1D2D] md:text-2xl">
+            <h1 className="break-words text-xl font-black tracking-tight text-[#0F1D2D] md:text-2xl">
               {tenant.name}
             </h1>
 
@@ -49,10 +49,10 @@ export function BookingPageHeader({
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-xs font-medium text-slate-500 transition hover:text-[#1FA7A6]"
+                className="mt-0.5 inline-flex max-w-full items-start gap-1 text-xs font-medium text-slate-500 transition hover:text-[#1FA7A6]"
               >
                 <span>📍</span>
-                <span className="truncate">{tenant.address}</span>
+                <span className="break-words">{tenant.address}</span>
                 <span className="hidden text-[10px] text-slate-400 sm:inline">
                   (Apri Maps)
                 </span>
