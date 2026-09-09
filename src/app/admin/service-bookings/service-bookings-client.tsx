@@ -166,6 +166,20 @@ useEffect(() => {
   })()
 }, [])
 useEffect(() => {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
+
+  const handleServiceWorkerMessage = (event: MessageEvent) => {
+    if (event.data?.type !== 'slotta-badge-count') return
+    const count = Number(event.data.count)
+    if (Number.isFinite(count)) updateAppBadge(count)
+  }
+
+  navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage)
+  return () => {
+    navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage)
+  }
+}, [])
+useEffect(() => {
   soundEnabledRef.current = soundEnabled
   soundReadyRef.current = soundReady
 }, [soundEnabled, soundReady])

@@ -72,7 +72,7 @@ if (subscriptions.length === 0) {
   url: payload.url || '/admin/service-bookings',
   badgeCount: payload.badgeCount ?? 1,
     badge: payload.badge || '/notification-badge.png',
-tag: 'slotta-new-booking',
+  tag: payload.tag || 'slotta-new-booking-default',
   })
 
   await Promise.allSettled(
