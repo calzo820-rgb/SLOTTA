@@ -355,6 +355,7 @@ try {
   .select('id', { count: 'exact', head: true })
   .eq('tenant_id', tenant_id)
   .eq('status', 'pending')
+  .is('manager_seen_at', null)
 
 await sendPushNotificationsToTenant(tenant_id, {
   title: 'Nuova prenotazione',

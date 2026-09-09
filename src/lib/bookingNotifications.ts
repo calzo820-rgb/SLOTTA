@@ -6,7 +6,11 @@ type BookingNotificationState = {
 }
 
 export function requiresManagerAction(booking: BookingNotificationState) {
-  return booking.status === 'pending' && booking.checkout_pending !== true
+  return (
+    booking.status === 'pending' &&
+    booking.checkout_pending !== true &&
+    booking.manager_seen_at == null
+  )
 }
 
 export function shouldAutoAcknowledgePaidBooking(

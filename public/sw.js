@@ -21,12 +21,12 @@ let data = {
       try {
         const badgeCount = Number(data.badgeCount || 0)
 
-        if ('setAppBadge' in self.navigator && badgeCount > 0) {
-          await self.navigator.setAppBadge(badgeCount)
+        if ('setAppBadge' in navigator && badgeCount > 0) {
+          await navigator.setAppBadge(badgeCount)
         }
 
-        if ('clearAppBadge' in self.navigator && badgeCount === 0) {
-          await self.navigator.clearAppBadge()
+        if ('clearAppBadge' in navigator && badgeCount === 0) {
+          await navigator.clearAppBadge()
         }
       } catch {}
 
