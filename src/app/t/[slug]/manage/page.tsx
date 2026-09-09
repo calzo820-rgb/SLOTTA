@@ -58,12 +58,9 @@ export default async function ManageBookingPage({ params, searchParams }: Props)
     )
   }
 
-  const contactPhone = managed.tenant.whatsapp_phone || managed.tenant.phone
-  const contactHref = contactPhone
-    ? `tel:${contactPhone}`
-    : managed.tenant.contact_email
-      ? `mailto:${managed.tenant.contact_email}`
-      : null
+  const whatsappHref = managed.tenant.whatsapp_phone
+    ? `https://wa.me/${managed.tenant.whatsapp_phone.replace(/\D/g, '')}`
+    : null
 
   return (
     <main className="min-h-screen bg-[#F2F4F7] px-4 py-8 text-[#0F1D2D]">
@@ -111,10 +108,15 @@ export default async function ManageBookingPage({ params, searchParams }: Props)
 
             {managed.canCancel ? <ManageBookingActions slug={slug} token={token} /> : null}
 
-            {!managed.canCancel && contactHref && managed.cancellationState !== 'cancelled' ? (
-              <a href={contactHref} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-black transition hover:border-[#1FA7A6]">
-                Contatta l’attività
-              </a>
+            {!managed.canCancel && managed.cancellationState !== 'cancelled' && (managed.tenant.phone || whatsappHref || managed.tenant.contact_email) ? (
+              <div className="grid gap-2 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-[#1FA7A6]">Contatta l’attività</p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {managed.tenant.phone ? <a href={`tel:${managed.tenant.phone}`} className="rounded-2xl bg-white px-3 py-3 text-center text-sm font-black">📞 Chiama</a> : null}
+                  {whatsappHref ? <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-white px-3 py-3 text-center text-sm font-black">💬 WhatsApp</a> : null}
+                  {managed.tenant.contact_email ? <a href={`mailto:${managed.tenant.contact_email}`} className="rounded-2xl bg-white px-3 py-3 text-center text-sm font-black">✉️ Email</a> : null}
+                </div>
+              </div>
             ) : null}
 
             <Link href={`/t/${slug}`} className="rounded-2xl bg-[#FFC145] px-5 py-3 text-center text-sm font-black shadow-sm">
