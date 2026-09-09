@@ -4,6 +4,7 @@ import {
   hashBookingConfirmationToken,
   isValidBookingConfirmationToken,
 } from '@/lib/bookingConfirmationToken'
+import { cleanPhoneForWhatsapp } from '@/components/service-booking/utils'
 type Props = {
   params: Promise<{ slug: string }>
   searchParams: Promise<{
@@ -89,7 +90,7 @@ export default async function BookingSuccessPage({
 
   const { data: tenant } = await getSupabaseAdmin()
     .from('tenants')
-    .select('id, name, slug, logo_url')
+    .select('id, name, slug, logo_url, phone, whatsapp_phone, contact_email')
     .eq('slug', slug)
     .maybeSingle()
 
@@ -298,6 +299,19 @@ export default async function BookingSuccessPage({
               >
                 Gestisci o annulla prenotazione
               </Link>
+            ) : null}
+
+            {!isCancelled && (tenant?.phone || tenant?.whatsapp_phone || tenant?.contact_email) ? (
+              <div className="grid gap-2 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-[#1FA7A6]">
+                  Contatta l’attività
+                </p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {tenant.phone ? <a href={`tel:${tenant.phone}`} className="rounded-2xl bg-white px-3 py-3 text-center text-sm font-black text-[#0F1D2D]">📞 Chiama</a> : null}
+                  {tenant.whatsapp_phone ? <a href={`https://wa.me/${cleanPhoneForWhatsapp(tenant.whatsapp_phone)}`} target="_blank" rel="noopener noreferrer" className="rounded-2xl bg-white px-3 py-3 text-center text-sm font-black text-[#0F1D2D]">💬 WhatsApp</a> : null}
+                  {tenant.contact_email ? <a href={`mailto:${tenant.contact_email}`} className="rounded-2xl bg-white px-3 py-3 text-center text-sm font-black text-[#0F1D2D]">✉️ Email</a> : null}
+                </div>
+              </div>
             ) : null}
 
             <Link
