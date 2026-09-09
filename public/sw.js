@@ -7,7 +7,7 @@ let data = {
   icon: '/notification-icon.png',
   badge: '/notification-badge.png',
   badgeCount: 1,
-  tag: 'slotta-new-booking',
+  tag: 'slotta-new-booking-default',
 }
   try {
     if (event.data) {
@@ -34,8 +34,8 @@ let data = {
   body: data.body || '',
   icon: data.icon || '/notification-icon.png',
   badge: data.badge || '/notification-badge.png',
-  tag: data.tag || 'slotta-new-booking',
-  renotify: false,
+  tag: data.tag || 'slotta-new-booking-default',
+  renotify: true,
   data: {
     url: data.url || '/admin/service-bookings',
   },
@@ -65,4 +65,4 @@ self.addEventListener('notificationclick', event => {
     }),
   )
 })
-// sw-version: 2026-05-11-02
+// sw-version: 2026-09-09-03

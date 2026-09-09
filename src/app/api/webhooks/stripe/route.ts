@@ -276,6 +276,7 @@ async function handlePost(req: Request) {
           body: `${hold.customer_name} ha pagato e confermato un appuntamento.`,
           url: '/admin/service-bookings',
           badgeCount: pendingCount ?? 0,
+          tag: `slotta-new-booking-${finalizationResult.booking_id}`,
         })
       } catch {
         logApiEvent('stripe_booking_push_failed', 'error')
