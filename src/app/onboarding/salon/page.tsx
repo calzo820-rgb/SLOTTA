@@ -76,7 +76,7 @@ async function onSubmit(e: React.FormEvent) {
     setLoading(false)
 
     // 4) Vai all’admin
-    router.replace('/admin')
+    router.replace('/account-pending')
     router.refresh()
   } catch (e: unknown) {
     const message =
