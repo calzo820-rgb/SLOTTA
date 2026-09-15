@@ -98,7 +98,7 @@ export async function POST(req: Request) {
   name: businessName,
   slug,
   tenant_mode: "service",
-  is_active: true,
+  is_active: false,
   primary_color: "#1FA7A6",
   secondary_color: "#0F1D2D",
   contact_email: contactEmail,
@@ -121,7 +121,7 @@ export async function POST(req: Request) {
       tenant_id: tenantId,
       user_id: userId,
       role: "owner",
-      is_active: true,
+      is_active: false,
       // allowed_pages: null, // se la colonna esiste, puoi lasciarla null
     });
 
