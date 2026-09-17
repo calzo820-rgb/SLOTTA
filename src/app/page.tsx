@@ -42,7 +42,7 @@ export default function HomePage() {
             </Link>
 
             <Link
-              href="/onboarding/salon"
+              href="/tester"
               className="hidden rounded-2xl bg-[#FFC145] px-4 py-2 text-sm font-black text-[#0F1D2D] shadow-sm transition hover:-translate-y-[1px] hover:brightness-95 hover:shadow-md sm:inline-flex"
             >
               Inizia ora
@@ -70,7 +70,7 @@ export default function HomePage() {
 
           <div className="grid gap-3 sm:flex sm:flex-wrap">
             <Link
-              href="/onboarding/salon"
+              href="/tester"
               className="inline-flex items-center justify-center rounded-2xl bg-[#FFC145] px-5 py-3 text-sm font-black text-[#0F1D2D] shadow-sm transition hover:-translate-y-[1px] hover:brightness-95 hover:shadow-md"
             >
               Inizia ora
@@ -234,7 +234,7 @@ export default function HomePage() {
             </div>
 
             <Link
-              href="/onboarding/salon"
+              href="/tester"
               className="inline-flex items-center justify-center rounded-2xl bg-[#FFC145] px-5 py-3 text-sm font-black text-[#0F1D2D] shadow-sm transition hover:-translate-y-[1px] hover:brightness-95 hover:shadow-md"
             >
               Inizia ora
@@ -246,7 +246,7 @@ export default function HomePage() {
       {/* CTA MOBILE FISSA */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white p-3 shadow-[0_-10px_30px_rgba(15,29,45,0.08)] sm:hidden">
         <Link
-          href="/onboarding/salon"
+          href="/tester"
           className="flex w-full items-center justify-center rounded-2xl bg-[#FFC145] px-4 py-3 text-sm font-black text-[#0F1D2D]"
         >
           Inizia ora
