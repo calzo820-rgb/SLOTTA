@@ -1076,6 +1076,29 @@ className={`grid gap-3 text-sm ${
                       </section>
                     )}
 
+                    {staffSelectionMode === 'client_choice' && !isDesktop && currentStep === 3 && (
+                      <section className="grid gap-4">
+                        <div>
+                          <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">Step 3</p>
+                          <h3 className="text-lg font-black text-[#0F1D2D]">Scegli l’operatore</h3>
+                          <p className="mt-1 text-xs leading-5 text-slate-500">Scegli un operatore disponibile oppure lascia l’assegnazione automatica.</p>
+                        </div>
+                        <div className="grid gap-2">
+                          <button type="button" onClick={() => setSelectedStaffId('any')} className={`rounded-2xl border p-4 text-left transition ${selectedStaffId === 'any' ? 'border-[#1FA7A6] bg-[#E6FFFA] ring-2 ring-[#1FA7A6]/10' : 'border-slate-200 bg-white'}`}>
+                            <div className="font-black text-[#0F1D2D]">Assegnazione automatica</div>
+                            <div className="mt-1 text-xs text-slate-500">Ti assegniamo l’operatore disponibile.</div>
+                          </button>
+                          {staff.map(member => {
+                            const available = staffAvailability[`${member.id}:${selectedTime}`] === true
+                            const selected = selectedStaffId === member.id
+                            return <button key={member.id} type="button" disabled={!available} onClick={() => setSelectedStaffId(member.id)} className={`rounded-2xl border p-4 text-left transition ${!available ? 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300' : selected ? 'border-[#1FA7A6] bg-[#E6FFFA] ring-2 ring-[#1FA7A6]/10' : 'border-slate-200 bg-white'}`}>
+                              <div className="flex items-center justify-between gap-3"><span className="font-black">{member.name}</span><span className={`text-xs font-bold ${available ? 'text-emerald-600' : 'text-slate-400'}`}>{available ? 'Disponibile' : 'Non disponibile'}</span></div>
+                            </button>
+                          })}
+                        </div>
+                      </section>
+                    )}
+
                     {/* STEP 3 */}
                     {((currentStep === (staffSelectionMode === 'client_choice' && !isDesktop ? 4 : 3)) || isDesktop) && (
                       <section className="grid gap-4">
