@@ -757,7 +757,10 @@ const phoneError =
   const canGoStep2 = !!selectedService
   const hasMobileStaffStep = !isDesktop && staffSelectionMode === 'client_choice'
   const canGoStep3 = !!selectedTime
-  const canGoStep4 = !!selectedTime && (selectedStaffId === 'any' || !!staffAvailability[selectedStaffId])
+  const canGoStep4 =
+    !!selectedTime &&
+    (selectedStaffId === 'any' ||
+      staffAvailability[`${selectedStaffId}:${selectedTime}`] === true)
 
 const canSubmit =
   isServiceSelected &&
