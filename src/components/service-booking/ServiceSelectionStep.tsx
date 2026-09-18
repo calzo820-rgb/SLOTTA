@@ -2,7 +2,7 @@ import type { Service } from './types'
 import Image from 'next/image'
 
 type Props = {
-  currentStep: 1 | 2 | 3
+  currentStep: 1 | 2 | 3 | 4
   isDesktop: boolean
   services: Service[]
   selectedServiceId: string | null
