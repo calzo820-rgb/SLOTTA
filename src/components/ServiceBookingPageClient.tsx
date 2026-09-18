@@ -73,6 +73,7 @@ export default function ServiceBookingPageClient({ tenant, services }: Props) {
 
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [selectedStaffId, setSelectedStaffId] = useState<'any' | string>('any')
+  const [staffAvailability, setStaffAvailability] = useState<Record<string, boolean>>({})
   const [showStaffPicker, setShowStaffPicker] = useState(false)
 const [isCancelReturn, setIsCancelReturn] = useState(false)
   const today = useMemo(() => safeIsoTodayLocal(), [])
@@ -83,7 +84,7 @@ const [isCancelReturn, setIsCancelReturn] = useState(false)
   const [errorSlots, setErrorSlots] = useState<string | null>(null)
   const [isClosedDay, setIsClosedDay] = useState(false)
 
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -381,6 +382,7 @@ if (!bookedRes.ok) {
 
 type BookedSlotRow = {
   service_id: string
+  staff_id: string | null
   booking_time: string
   status: string
 }
@@ -445,6 +447,37 @@ const bookings: BookedSlotRow[] = Array.isArray(bookedData.bookings)
         })
 
         if (!cancelled) setSlots(slotsTmp)
+
+        if (!cancelled) {
+          const availability: Record<string, boolean> = {}
+          for (const member of staffRows as StaffMember[]) {
+            const memberHours = (staffHoursRows as StaffHoursRow[]).find(
+              sh => sh.staff_id === member.id && sh.dow === dow,
+            ) || null
+            const memberSegments = buildSegments({
+              selectedStaffId: member.id,
+              tenantHours: r,
+              selectedStaffHours: memberHours,
+            })
+            const memberBookings = bookings.filter(b => b.staff_id === member.id).map(b => {
+              const start = timeStrToMinutes(b.booking_time)
+              return { start, end: start + (durationByServiceId[b.service_id] || 60) }
+            })
+            const memberSlots = buildSlots({
+              date,
+              segments: memberSegments,
+              slotMinutes,
+              selectedDuration,
+              intervals: memberBookings,
+              staffCount: 1,
+              leadMinutes,
+            })
+            memberSlots.forEach(s => {
+              availability[`${member.id}:${s.time}`] = !s.disabled
+            })
+          }
+          setStaffAvailability(availability)
+        }
       } catch (e: unknown) {
         if (!cancelled) {
           console.error('Errore caricamento slot servizi', {
@@ -722,7 +755,9 @@ const phoneError =
   const isSlotValid = !!selectedSlot && !selectedSlot.disabled
 
   const canGoStep2 = !!selectedService
+  const hasMobileStaffStep = !isDesktop && staffSelectionMode === 'client_choice'
   const canGoStep3 = !!selectedTime
+  const canGoStep4 = !!selectedTime && (selectedStaffId === 'any' || !!staffAvailability[selectedStaffId])
 
 const canSubmit =
   isServiceSelected &&
@@ -825,7 +860,7 @@ return effectivePaymentMode === 'online' ? 'Prenota e paga ora' : 'Conferma appu
                           </p>
                         </div>
 
-                        {staff.length > 1 && staffSelectionMode === 'client_choice' && (
+                        {staff.length > 1 && staffSelectionMode === 'client_choice' && isDesktop && (
                           <div className="grid gap-2">
                             <p className="text-sm font-bold text-[#0F1D2D]">
                               Operatore
@@ -894,6 +929,29 @@ return effectivePaymentMode === 'online' ? 'Prenota e paga ora' : 'Conferma appu
                               </div>
                             )}
                           </div>
+                        )}
+
+                        {staffSelectionMode === 'client_choice' && !isDesktop && currentStep === 3 && (
+                          <section className="grid gap-4">
+                            <div>
+                              <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">Step 3</p>
+                              <h3 className="text-lg font-black text-[#0F1D2D]">Scegli l’operatore</h3>
+                              <p className="mt-1 text-xs leading-5 text-slate-500">Scegli un operatore disponibile oppure lascia l’assegnazione automatica.</p>
+                            </div>
+                            <div className="grid gap-2">
+                              <button type="button" onClick={() => setSelectedStaffId('any')} className={`rounded-2xl border p-4 text-left transition ${selectedStaffId === 'any' ? 'border-[#1FA7A6] bg-[#E6FFFA] ring-2 ring-[#1FA7A6]/10' : 'border-slate-200 bg-white'}`}>
+                                <div className="font-black text-[#0F1D2D]">Assegnazione automatica</div>
+                                <div className="mt-1 text-xs text-slate-500">Ti assegniamo l’operatore disponibile.</div>
+                              </button>
+                              {staff.map(member => {
+                                const available = staffAvailability[`${member.id}:${selectedTime}`] === true
+                                const selected = selectedStaffId === member.id
+                                return <button key={member.id} type="button" disabled={!available} onClick={() => setSelectedStaffId(member.id)} className={`rounded-2xl border p-4 text-left transition ${!available ? 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300' : selected ? 'border-[#1FA7A6] bg-[#E6FFFA] ring-2 ring-[#1FA7A6]/10' : 'border-slate-200 bg-white'}`}>
+                                  <div className="flex items-center justify-between gap-3"><span className="font-black">{member.name}</span><span className={`text-xs font-bold ${available ? 'text-emerald-600' : 'text-slate-400'}`}>{available ? 'Disponibile' : 'Non disponibile'}</span></div>
+                                </button>
+                              })}
+                            </div>
+                          </section>
                         )}
 
                         <div
@@ -1019,13 +1077,13 @@ className={`grid gap-3 text-sm ${
                     )}
 
                     {/* STEP 3 */}
-                    {(currentStep === 3 || isDesktop) && (
+                    {((currentStep === (staffSelectionMode === 'client_choice' && !isDesktop ? 4 : 3)) || isDesktop) && (
                       <section className="grid gap-4">
                         <div className="h-px bg-slate-100" />
 
                         <div>
                           <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
-                            Step 3
+                            Step {staffSelectionMode === 'client_choice' && !isDesktop ? 4 : 3}
                           </p>
                           <h3 className="text-lg font-black text-[#0F1D2D]">
                             I tuoi dati
@@ -1434,13 +1492,15 @@ className={`grid gap-3 text-sm ${
       {/* MOBILE STEP BAR */}
       <MobileStepBar
   currentStep={currentStep}
+  totalSteps={hasMobileStaffStep ? 4 : 3}
   mainColor={mainColor}
   canGoStep2={canGoStep2}
   canGoStep3={canGoStep3}
+  canGoStep4={canGoStep4}
   canSubmit={canSubmit}
   onBack={() => {
     if (currentStep > 1) {
-      setCurrentStep((currentStep - 1) as 1 | 2 | 3)
+      setCurrentStep((currentStep - 1) as 1 | 2 | 3 | 4)
     }
   }}
   onContinue={() => {
@@ -1454,7 +1514,12 @@ className={`grid gap-3 text-sm ${
       return
     }
 
-    if (currentStep === 3 && canSubmit) {
+    if (currentStep === 3 && hasMobileStaffStep && canGoStep4) {
+      setCurrentStep(4)
+      return
+    }
+
+    if (currentStep === 4 && canSubmit) {
       setReviewOpen(true)
     }
   }}
