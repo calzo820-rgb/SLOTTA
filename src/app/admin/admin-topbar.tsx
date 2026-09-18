@@ -34,6 +34,7 @@ export default function AdminTopBar({
   { key: 'closures', label: 'Chiusure', href: '/admin/closures' },
   { key: 'staff', label: 'Staff', href: '/admin/staff' },
   { key: 'profile', label: 'Profilo', href: '/admin/profile' },
+  ...(role === 'owner' ? [{ key: 'tester-leads', label: 'Richieste tester', href: '/admin/tester-leads' }] : []),
 ]
 
 const tabs =
