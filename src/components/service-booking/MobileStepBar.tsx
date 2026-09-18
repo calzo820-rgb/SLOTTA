@@ -1,8 +1,10 @@
 type Props = {
-  currentStep: 1 | 2 | 3
+  currentStep: 1 | 2 | 3 | 4
+  totalSteps: 3 | 4
   mainColor: string
   canGoStep2: boolean
   canGoStep3: boolean
+  canGoStep4: boolean
   canSubmit: boolean
   onBack: () => void
   onContinue: () => void
@@ -10,9 +12,11 @@ type Props = {
 
 export function MobileStepBar({
   currentStep,
+  totalSteps,
   mainColor,
   canGoStep2,
   canGoStep3,
+  canGoStep4,
   canSubmit,
   onBack,
   onContinue,
@@ -20,12 +24,13 @@ export function MobileStepBar({
   const nextDisabled =
     (currentStep === 1 && !canGoStep2) ||
     (currentStep === 2 && !canGoStep3) ||
-    (currentStep === 3 && !canSubmit)
+    (currentStep === 3 && !canGoStep4) ||
+    (currentStep === 4 && !canSubmit)
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 grid gap-3 border-t border-slate-200 bg-white p-3 shadow-[0_-10px_30px_rgba(15,29,45,0.08)] md:hidden">
       <div className="grid grid-cols-3 gap-2">
-        {[1, 2, 3].map(step => (
+        {Array.from({ length: totalSteps }, (_, index) => index + 1).map(step => (
           <div
             key={step}
             className="h-2 rounded-full transition"
@@ -53,7 +58,7 @@ export function MobileStepBar({
           className="flex-1 rounded-2xl bg-[#1FA7A6] px-4 py-3 text-sm font-black text-white disabled:opacity-40"
           style={{ background: mainColor }}
         >
-          {currentStep === 3 ? 'Riepilogo' : 'Continua'}
+          {currentStep === 4 ? 'Riepilogo' : 'Continua'}
         </button>
       </div>
     </div>
