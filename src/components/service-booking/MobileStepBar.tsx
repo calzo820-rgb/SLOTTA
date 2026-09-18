@@ -29,7 +29,10 @@ export function MobileStepBar({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 grid gap-3 border-t border-slate-200 bg-white p-3 shadow-[0_-10px_30px_rgba(15,29,45,0.08)] md:hidden">
-      <div className="grid grid-cols-3 gap-2">
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))` }}
+      >
         {Array.from({ length: totalSteps }, (_, index) => index + 1).map(step => (
           <div
             key={step}
