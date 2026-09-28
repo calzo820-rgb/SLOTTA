@@ -30,7 +30,7 @@ export default function AdminTopBar({
   { key: 'bookings', label: 'Prenotazioni', href: '/admin/service-bookings' },
   { key: 'calendar', label: 'Calendario', href: '/admin/service-calendar' },
   { key: 'services', label: 'Servizi', href: '/admin/services' },
-  { key: 'hours', label: 'Orari', href: '/admin/hours' },
+  { key: 'hours', label: 'Impostazioni', href: '/admin/hours' },
   { key: 'closures', label: 'Chiusure', href: '/admin/closures' },
   { key: 'staff', label: 'Staff', href: '/admin/staff' },
   { key: 'profile', label: 'Profilo', href: '/admin/profile' },
