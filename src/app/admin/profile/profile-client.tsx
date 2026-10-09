@@ -766,8 +766,13 @@ async function cancelAccountDeletion() {
                   className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left transition hover:bg-[#EAF7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
                 >
                   <div>
-                    <h2 className="text-base font-black text-[#0F1D2D]">Pagamenti online</h2>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
+                      Pagamenti online
+                    </p>
+                    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">
+                      Stripe Connect
+                    </h2>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">
                       {connectStatusLoading ? 'Controllo stato…' : connectError ? 'Stato da verificare' : connectStatus?.charges_enabled && connectStatus?.payouts_enabled ? 'Attivi' : connectStatus?.connected ? 'Da completare' : 'Da configurare'}
                     </p>
                   </div>
