@@ -562,7 +562,7 @@ async function cancelAccountDeletion() {
                </div>
             </section>
 
-            <aside className="grid gap-5">
+            <aside className="grid self-start gap-5">
               <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
 
   <button
