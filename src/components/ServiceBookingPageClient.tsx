@@ -1220,28 +1220,7 @@ className={`grid gap-3 text-sm ${
     </div>
   </div>
 
-  <label className="flex gap-3 rounded-2xl border border-slate-200 bg-[#F8FAFC] p-3 text-xs leading-5 text-slate-600">
-    <input
-      type="checkbox"
-      checked={privacyAccepted}
-      onChange={e => setPrivacyAccepted(e.target.checked)}
-      className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300"
-    />
 
-    <span>
-      Ho letto l{'’'}informativa privacy e acconsento al trattamento dei dati necessari
-      alla gestione della prenotazione.{' '}
-      <a
-        href="/privacy"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-bold underline underline-offset-4"
-        style={{ color: mainColor }}
-      >
-        Leggi informativa privacy
-      </a>
-    </span>
-  </label>
 </div>
 
                         {paymentModeDefault === 'client_choice' && (
@@ -1338,6 +1317,29 @@ className={`grid gap-3 text-sm ${
                             </div>
                           </div>
                         )}
+
+  <label className="flex gap-3 rounded-2xl border border-slate-200 bg-[#F8FAFC] p-3 text-xs leading-5 text-slate-600">
+    <input
+      type="checkbox"
+      checked={privacyAccepted}
+      onChange={e => setPrivacyAccepted(e.target.checked)}
+      className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300"
+    />
+
+    <span>
+      Ho letto l{'’'}informativa privacy e acconsento al trattamento dei dati necessari
+      alla gestione della prenotazione.{' '}
+      <a
+        href="/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-bold underline underline-offset-4"
+        style={{ color: mainColor }}
+      >
+        Leggi informativa privacy
+      </a>
+    </span>
+  </label>
 
                         {isDesktop && (
                           <button
