@@ -35,6 +35,7 @@ const [staffLoginCode, setStaffLoginCode] = useState<string | null>(null)
 const [mobileSections, setMobileSections] = useState<MobileSections>({
   addStaff: false,
   operators: false,
+  accesses: false,
 })
 async function loadStaffLoginCode() {
   if (!tenantId) return
@@ -597,6 +598,32 @@ async function deleteStaffAccess(access: StaffAccess) {
   </div>
 </div>
 
+      </section>
+
+{/* ACCESSI GESTIONALI */}
+<section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+{/* HEADER DESKTOP */}
+<div className="hidden items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 md:flex">
+  <div>
+    <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
+      Accessi gestionali
+    </p>
+    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">
+     Account per il gestionale
+    </h2>
+    <p className="mt-1 text-sm text-slate-500">
+      Dai accesso al gestionale senza condividere il tuo account.
+    </p>
+  </div>
+</div>
+
+<MobileSectionHeader
+  eyebrow="Accessi staff"
+  title="Accessi e permessi"
+  open={mobileSections.accesses}
+  onToggle={() => toggleMobileSection('accesses')}
+/>
+
   <StaffAccessPanel
   open={mobileSections.accesses}
   staffLoginCode={staffLoginCode}
@@ -614,7 +641,7 @@ async function deleteStaffAccess(access: StaffAccess) {
   createStaffAccess={createStaffAccess}
   deleteStaffAccess={deleteStaffAccess}
 />
-      </section>
+</section>
 
       {/* OPERATORI */}
       <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
