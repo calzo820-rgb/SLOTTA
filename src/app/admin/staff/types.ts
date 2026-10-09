@@ -19,5 +19,4 @@ export type StaffAccess = {
 export type MobileSections = {
   addStaff: boolean
   operators: boolean
-  accesses: boolean
 }
