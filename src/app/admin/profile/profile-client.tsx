@@ -103,19 +103,28 @@ export default function ProfileClient({ tenantId }: { tenantId: string }) {
 const [connectError, setConnectError] = useState<string | null>(null)
 const [connectStatus, setConnectStatus] = useState<StripeConnectStatus | null>(null)
 const [connectStatusLoading, setConnectStatusLoading] = useState(false)
-const [mobileSections, setMobileSections] = useState({
-  details: false,
+const [sections, setSections] = useState({
+  details: true,
   identity: false,
   links: false,
   staff: false,
   data: false,
+  payments: false,
 })
 
-function toggleMobileSection(section: keyof typeof mobileSections) {
-  setMobileSections(prev => ({
-    ...prev,
-    [section]: !prev[section],
-  }))
+function toggleSection(section: keyof typeof sections) {
+  setSections(prev => {
+    if (section === 'details') return { ...prev, details: !prev.details }
+    return {
+      details: prev.details,
+      identity: false,
+      links: false,
+      staff: false,
+      data: false,
+      payments: false,
+      [section]: !prev[section],
+    }
+  })
 }
   const publicLink = useMemo(() => {
     if (!profile?.slug) return ''
@@ -412,24 +421,13 @@ async function cancelAccountDeletion() {
           <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
 
             <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-  {/* HEADER DESKTOP */}
-  <div className="hidden border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 md:block">
-    <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
-      Dati attività
-    </p>
-    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">
-      Informazioni principali
-    </h2>
-    <p className="mt-1 text-sm text-slate-500">
-      Queste informazioni ti aiutano a presentare meglio l’attività.
-    </p>
-  </div>
 
-  {/* HEADER MOBILE */}
   <button
     type="button"
-    onClick={() => toggleMobileSection('details')}
-    className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left md:hidden"
+    onClick={() => toggleSection('details')}
+    aria-expanded={sections.details}
+    aria-controls="profile-details"
+    className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left transition hover:bg-[#EAF7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
   >
     <div>
       <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
@@ -440,12 +438,12 @@ async function cancelAccountDeletion() {
       </h2>
     </div>
 
-    <span className="text-sm font-black text-slate-400">
-      {mobileSections.details ? '▲' : '▼'}
+    <span aria-hidden="true" className="text-sm font-black text-slate-400">
+      {sections.details ? '▲' : '▼'}
     </span>
   </button>
 
-              <div className={mobileSections.details ? 'block' : 'hidden md:block'}>
+              <div id="profile-details" className={sections.details ? 'block' : 'hidden'}>
   <div className="grid gap-4 p-5">
                 <label className="grid gap-1">
                   <span className="text-sm font-bold text-[#0F1D2D]">
@@ -566,21 +564,13 @@ async function cancelAccountDeletion() {
 
             <aside className="grid gap-5">
               <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-  {/* HEADER DESKTOP */}
-  <div className="hidden border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 md:block">
-    <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
-      Identità
-    </p>
-    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">
-      Logo attività
-    </h2>
-  </div>
 
-  {/* HEADER MOBILE */}
   <button
     type="button"
-    onClick={() => toggleMobileSection('identity')}
-    className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left md:hidden"
+    onClick={() => toggleSection('identity')}
+    aria-expanded={sections.identity}
+    aria-controls="profile-identity"
+    className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left transition hover:bg-[#EAF7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
   >
     <div>
       <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
@@ -591,12 +581,12 @@ async function cancelAccountDeletion() {
       </h2>
     </div>
 
-    <span className="text-sm font-black text-slate-400">
-      {mobileSections.identity ? '▲' : '▼'}
+    <span aria-hidden="true" className="text-sm font-black text-slate-400">
+      {sections.identity ? '▲' : '▼'}
     </span>
   </button>
 
-  <div className={mobileSections.identity ? 'block' : 'hidden md:block'}>
+  <div id="profile-identity" className={sections.identity ? 'block' : 'hidden'}>
   <div className="grid gap-4 p-5">
     <div className="flex items-center gap-4">
       {logoFile ? (
@@ -668,21 +658,13 @@ async function cancelAccountDeletion() {
               </section>
 
               <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-  {/* HEADER DESKTOP */}
-  <div className="hidden border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 md:block">
-    <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
-      Link prenotazioni
-    </p>
-    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">
-      Prenotazione online
-    </h2>
-  </div>
 
-  {/* HEADER MOBILE */}
   <button
     type="button"
-    onClick={() => toggleMobileSection('links')}
-    className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left md:hidden"
+    onClick={() => toggleSection('links')}
+    aria-expanded={sections.links}
+    aria-controls="profile-links"
+    className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left transition hover:bg-[#EAF7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
   >
     <div>
       <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
@@ -693,12 +675,12 @@ async function cancelAccountDeletion() {
       </h2>
     </div>
 
-    <span className="text-sm font-black text-slate-400">
-      {mobileSections.links ? '▲' : '▼'}
+    <span aria-hidden="true" className="text-sm font-black text-slate-400">
+      {sections.links ? '▲' : '▼'}
     </span>
   </button>
 
-  <div className={mobileSections.links ? 'block' : 'hidden md:block'}>
+  <div id="profile-links" className={sections.links ? 'block' : 'hidden'}>
     <div className="grid gap-3 p-5">
                   <div className="rounded-2xl border border-slate-200 bg-[#F8FAFC] p-3">
                     <div className="text-xs font-black uppercase tracking-wide text-slate-400">
@@ -776,16 +758,22 @@ async function cancelAccountDeletion() {
                 </div>
               </section>
                            <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4">
-                  <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
-                    Pagamenti online
-                  </p>
-                  <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">
-                    Stripe Connect
-                  </h2>
-                </div>
-
-                <div className="grid gap-4 p-5">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('payments')}
+                  aria-expanded={sections.payments}
+                  aria-controls="profile-payments"
+                  className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left transition hover:bg-[#EAF7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
+                >
+                  <div>
+                    <h2 className="text-base font-black text-[#0F1D2D]">Pagamenti online</h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {connectStatusLoading ? 'Controllo stato…' : connectError ? 'Stato da verificare' : connectStatus?.charges_enabled && connectStatus?.payouts_enabled ? 'Attivi' : connectStatus?.connected ? 'Da completare' : 'Da configurare'}
+                    </p>
+                  </div>
+                  <span aria-hidden="true" className="text-sm font-black text-slate-400">{sections.payments ? '▲' : '▼'}</span>
+                </button>
+                <div id="profile-payments" className={sections.payments ? 'grid gap-4 p-5' : 'hidden'}>
                   {connectStatusLoading ? (
                     <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500">
                       Controllo stato pagamenti...
@@ -860,27 +848,24 @@ async function cancelAccountDeletion() {
               </section>
 
               <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-                <div className="hidden border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 md:block">
-                  <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">Dati e privacy</p>
-                  <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">Gestisci i dati</h2>
-                </div>
 
                 <button
                   type="button"
-                  onClick={() => toggleMobileSection('data')}
-                  aria-expanded={mobileSections.data}
-                  className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left md:hidden"
+                  onClick={() => toggleSection('data')}
+                  aria-expanded={sections.data}
+    aria-controls="profile-data"
+                  className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left transition hover:bg-[#EAF7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
                 >
                   <div>
                     <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">Dati e privacy</p>
                     <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">Gestisci i dati</h2>
                   </div>
                   <span aria-hidden="true" className="text-sm font-black text-slate-400">
-                    {mobileSections.data ? '▲' : '▼'}
+                    {sections.data ? '▲' : '▼'}
                   </span>
                 </button>
 
-                <div className={mobileSections.data ? 'block' : 'hidden md:block'}>
+                <div id="profile-data" className={sections.data ? 'block' : 'hidden'}>
                   <div className="grid gap-3 p-5">
                     <div>
                       <h3 className="text-base font-black text-[#0F1D2D]">Cancellazione dell’attività</h3>
@@ -948,21 +933,13 @@ async function cancelAccountDeletion() {
               </section>
               
               <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-  {/* HEADER DESKTOP */}
-  <div className="hidden border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 md:block">
-    <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
-      Accesso staff
-    </p>
-    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">
-      Codice attività
-    </h2>
-  </div>
 
-  {/* HEADER MOBILE */}
   <button
     type="button"
-    onClick={() => toggleMobileSection('staff')}
-    className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left md:hidden"
+    onClick={() => toggleSection('staff')}
+    aria-expanded={sections.staff}
+    aria-controls="profile-staff"
+    className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left transition hover:bg-[#EAF7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
   >
     <div>
       <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
@@ -973,12 +950,12 @@ async function cancelAccountDeletion() {
       </h2>
     </div>
 
-    <span className="text-sm font-black text-slate-400">
-      {mobileSections.staff ? '▲' : '▼'}
+    <span aria-hidden="true" className="text-sm font-black text-slate-400">
+      {sections.staff ? '▲' : '▼'}
     </span>
   </button>
 
-  <div className={mobileSections.staff ? 'block' : 'hidden md:block'}>
+  <div id="profile-staff" className={sections.staff ? 'block' : 'hidden'}>
     <div className="grid gap-3 p-5">
                   <div className="rounded-2xl border border-[#D7EEF0] bg-[#F3FBFB] p-4">
                     <div className="text-xs font-black uppercase tracking-wide text-[#1FA7A6]">
