@@ -1,49 +1,60 @@
-# Marketplace V1 — Fase 1 (nascosta)
+# Marketplace V1 — implementazione nascosta
 
 ## Stato
 
-Questa fase aggiunge la struttura tecnica in un branch. Non applica migrazioni a
-Supabase, non effettua deploy e non attiva la pubblicazione.
+Fase 1 e ricerca/lista della Fase 2 sono preparate nel branch
+`feat/marketplace-hidden-phase1`. La migrazione è un file nel repository: non è
+stata applicata a Supabase. Non sono stati effettuati merge o deploy di
+produzione.
 
-## Dati
+## Dati riutilizzati
 
 La tabella `public.tenant_marketplace` contiene solo impostazioni Marketplace,
-collegata uno-a-uno a `public.tenants` tramite `tenant_id`. Identità, indirizzo,
-Comune ISTAT, logo, slug e prenotazioni restano nella tabella `tenants` e nei
-flussi esistenti: non viene creata una seconda anagrafica.
+collegata uno-a-uno a `public.tenants` tramite `tenant_id`. Identità,
+indirizzo, Comune ISTAT, logo, slug e prenotazioni restano nei dati attuali:
+non viene creata una seconda anagrafica.
 
 Ogni riga ha adesione disattivata di default. Non viene eseguito alcun backfill.
-Le categorie ammesse sono parrucchiere, barber shop e centro estetico. Le
-coordinate sono facoltative; non sono generate da questa migrazione.
+Sono previste le categorie parrucchiere, barber shop e centro estetico.
+Coordinate e descrizione sono facoltative. Per cercare un Comune si riutilizzano
+i campi geografici già presenti e la tabella `italian_municipalities` con il
+dataset ISTAT installato (7.894 Comuni).
 
-Per la ricerca geografica si riutilizza `italian_municipalities` (dataset ISTAT
-già installato, 7.894 Comuni). La geocodifica degli indirizzi e la mappa sono
-fasi successive. Il client non deve inviare la posizione precisa del visitatore.
+## Ricerca e lista
 
-## Accesso interno
+`/marketplace` restituisce 404 quando `MARKETPLACE_ENABLED` non è
+esplicitamente `true`. Quando il flag è disattivato, nessuna query ai dati del
+Marketplace viene eseguita.
 
-`/marketplace/internal` restituisce 404 a meno che siano vere tutte le
-condizioni seguenti:
+La pagina interna `/marketplace/internal` richiede flag di test, email
+verificata in allowlist, sessione valida e appartenenza attiva con ruolo owner.
+Entrambe le pagine sono dinamiche e noindex.
 
-- `MARKETPLACE_INTERNAL_TESTS_ENABLED=true`;
-- `MARKETPLACE_INTERNAL_EMAILS` contenga l'indirizzo verificato dell'utente;
-- l'utente abbia una sessione Supabase valida e un'appartenenza Slotta attiva
-  con ruolo owner.
+La ricerca richiede nome o Comune, supporta categoria e limita la risposta a 24
+schede. La query legge solo attività attive, in modalità servizi, con adesione
+opt-in e categoria ammessa. Restituisce solo dati già destinati alla scheda
+pubblica: nome, logo, categoria, indirizzo, Comune, descrizione e link alla
+pagina di prenotazione. Non restituisce contatti, dati di pagamento o dati
+clienti. Il link continua a usare la pagina del salone esistente.
 
-Il flag pubblico `MARKETPLACE_ENABLED` è separato e non abilita l'accesso
-interno. Entrambi sono disattivati se non configurati. La pagina è dinamica e
-porta metadati noindex; questi metadati non sostituiscono il controllo server.
+## Accesso e sicurezza
 
-## Attivazione
+La tabella Marketplace ha RLS attivo e nessun accesso diretto con ruoli
+`anon` o `authenticated`. Le query server usano il client amministrativo e
+filtri espliciti. La feature flag pubblica è separata dal flag di test interno.
+I metadati noindex riducono l'indicizzazione, ma il controllo server-side è la
+barriera di accesso.
 
-Per testare questa route, configurare i due valori interni solo nell'ambiente
-preview autorizzato. Non impostarli sulla produzione. Il Marketplace pubblico
-richiederà un'implementazione e un'autorizzazione di lancio separate.
+## Non ancora implementato
 
-## Mappa
+- Nessuna adesione esposta nel profilo gestore e nessun backfill.
+- Nessuna mappa né geocodifica; non viene richiesta la posizione del visitatore.
+- Nessuna modifica alla pagina del salone o al flusso di prenotazione.
 
-Leaflet può fornire pan, zoom, marker selezionabili e popup/schede responsive,
-con interazioni familiari a Google Maps. Non fornisce immagini satellitari,
-Street View, dati Google o geocodifica: il rendering delle mappe e le coordinate
-dipendono dal provider scelto. L'attribuzione e i termini del provider restano
-visibili e rispettati.
+## Attivazione e costi
+
+Per testare la route interna serve configurare i flag e la lista email solo in
+un ambiente Preview autorizzato. Non impostarli in produzione durante questa
+fase. Per la parte cartografica si userà un provider selezionabile; Leaflet è
+solo la libreria UI e richiede attribuzione e condizioni d'uso del provider.
+La scelta e l'eventuale piano a pagamento restano separati dalla lista.
