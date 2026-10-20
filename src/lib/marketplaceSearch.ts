@@ -27,6 +27,8 @@ export type MarketplaceResult = {
   address: string | null
   postalCode: string | null
   description: string | null
+  latitude: number | null
+  longitude: number | null
   bookingUrl: string
 }
 
@@ -87,7 +89,7 @@ export async function searchMarketplace(
     let query = db
       .from('tenant_marketplace')
       .select(
-        'tenant_id, category, description, tenant:tenants!inner(id, name, slug, logo_url, address, city, province_code, municipality_code, postal_code, tenant_mode, is_active)',
+        'tenant_id, category, description, latitude, longitude, tenant:tenants!inner(id, name, slug, logo_url, address, city, province_code, municipality_code, postal_code, tenant_mode, is_active)',
       )
       .eq('opt_in', true)
       .eq('tenant.is_active', true)
@@ -150,6 +152,8 @@ export async function searchMarketplace(
             typeof tenant.postal_code === 'string' ? tenant.postal_code : null,
           description:
             typeof row.description === 'string' ? row.description : null,
+          latitude: typeof row.latitude === 'number' ? row.latitude : null,
+          longitude: typeof row.longitude === 'number' ? row.longitude : null,
           bookingUrl: `/t/${encodeURIComponent(slug)}`,
         }]
       })
