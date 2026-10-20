@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useState } from 'react'
 import type { MarketplaceResult } from '@/lib/marketplaceSearch'
+import GeocodeButton from './GeocodeButton'
 
 const MarketplaceMap = dynamic(() => import('./MarketplaceMap'), {
   ssr: false,
@@ -13,9 +14,11 @@ const MarketplaceMap = dynamic(() => import('./MarketplaceMap'), {
 export default function MarketplaceResults({
   items,
   hasMore,
+  allowGeocoding = false,
 }: {
   items: MarketplaceResult[]
   hasMore: boolean
+  allowGeocoding?: boolean
 }) {
   const [view, setView] = useState<'list' | 'map'>('list')
 
@@ -67,6 +70,9 @@ export default function MarketplaceResults({
                     {[item.address, item.postalCode, item.city, item.provinceCode].filter(Boolean).join(' · ')}
                   </p>
                   {item.description ? <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-600">{item.description}</p> : null}
+                  {allowGeocoding && item.latitude == null && item.longitude == null
+                    ? <GeocodeButton tenantId={item.id} />
+                    : null}
                 </div>
                 <Link href={item.bookingUrl} className="mt-4 inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-[#18212B] px-5 text-sm font-bold text-white transition hover:bg-[#304253] sm:mt-0">
                   Prenota
