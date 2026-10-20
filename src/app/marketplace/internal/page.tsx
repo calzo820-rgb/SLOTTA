@@ -43,6 +43,9 @@ export default async function InternalMarketplacePage({
       category={category}
       result={result}
       internal
+      allowGeocoding={
+        process.env.MARKETPLACE_GEOCODING_ENABLED?.trim().toLowerCase() === 'true'
+      }
     />
   )
 }
