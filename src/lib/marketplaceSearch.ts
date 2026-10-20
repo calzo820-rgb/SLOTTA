@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { hashBusinessAddress } from '@/lib/marketplaceGeocoding'
+import { getCurrentMarketplaceCoordinates } from '@/lib/marketplaceLocation'
 
 export const MARKETPLACE_CATEGORIES = ['hairdresser', 'barber', 'beauty'] as const
 export type MarketplaceCategory = (typeof MARKETPLACE_CATEGORIES)[number]
@@ -153,7 +153,7 @@ export async function searchMarketplace(
             typeof tenant.postal_code === 'string' ? tenant.postal_code : null,
           description:
             typeof row.description === 'string' ? row.description : null,
-          ...getCurrentCoordinates(row, tenant),
+          ...getCurrentMarketplaceCoordinates(row, tenant),
           bookingUrl: `/t/${encodeURIComponent(slug)}`,
         }]
       })
@@ -165,31 +165,4 @@ export async function searchMarketplace(
   }
 }
 
-function getCurrentCoordinates(
-  row: Record<string, unknown>,
-  tenant: Record<string, unknown>,
-): { latitude: number | null; longitude: number | null } {
-  const status = row.geocode_status
-  const locationIsCurrent = status === 'manual' || (
-    status === 'geocoded' &&
-    typeof row.geocoded_address_hash === 'string' &&
-    row.geocoded_address_hash === hashBusinessAddress({
-      address: typeof tenant.address === 'string' ? tenant.address : null,
-      postalCode: typeof tenant.postal_code === 'string' ? tenant.postal_code : null,
-      city: typeof tenant.city === 'string' ? tenant.city : null,
-      province: typeof tenant.province === 'string' ? tenant.province : null,
-      countryCode: typeof tenant.country_code === 'string' ? tenant.country_code : null,
-    })
-  )
-  if (!locationIsCurrent) return { latitude: null, longitude: null }
-
-  const latitude = Number(row.latitude)
-  const longitude = Number(row.longitude)
-  if (
-    !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
-    !Number.isFinite(longitude) || longitude < -180 || longitude > 180
-  ) return { latitude: null, longitude: null }
-
-  return { latitude, longitude }
-}
 
