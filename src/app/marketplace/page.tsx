@@ -37,7 +37,11 @@ export default async function MarketplacePage({
   const city = firstValue(params.city).slice(0, 80)
   const category = firstValue(params.category).slice(0, 30)
 
-  const requestHeaders = await headers()
+  const incomingHeaders = await headers()
+  const requestHeaders = new Headers()
+  const forwardedFor = incomingHeaders.get('x-forwarded-for')
+  if (forwardedFor) requestHeaders.set('x-forwarded-for', forwardedFor)
+
   const limited = await enforceDistributedRateLimit(
     new Request('https://marketplace.invalid', { headers: requestHeaders }),
     'marketplace-search',
