@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { hashBusinessAddress } from '@/lib/marketplaceGeocoding'
 
 export const MARKETPLACE_CATEGORIES = ['hairdresser', 'barber', 'beauty'] as const
 export type MarketplaceCategory = (typeof MARKETPLACE_CATEGORIES)[number]
@@ -89,7 +90,7 @@ export async function searchMarketplace(
     let query = db
       .from('tenant_marketplace')
       .select(
-        'tenant_id, category, description, latitude, longitude, tenant:tenants!inner(id, name, slug, logo_url, address, city, province_code, municipality_code, postal_code, tenant_mode, is_active)',
+        'tenant_id, category, description, latitude, longitude, geocode_status, geocoded_address_hash, tenant:tenants!inner(id, name, slug, logo_url, address, city, province, province_code, municipality_code, postal_code, country_code, tenant_mode, is_active)',
       )
       .eq('opt_in', true)
       .eq('tenant.is_active', true)
@@ -152,8 +153,7 @@ export async function searchMarketplace(
             typeof tenant.postal_code === 'string' ? tenant.postal_code : null,
           description:
             typeof row.description === 'string' ? row.description : null,
-          latitude: typeof row.latitude === 'number' ? row.latitude : null,
-          longitude: typeof row.longitude === 'number' ? row.longitude : null,
+          ...getCurrentCoordinates(row, tenant),
           bookingUrl: `/t/${encodeURIComponent(slug)}`,
         }]
       })
@@ -164,3 +164,32 @@ export async function searchMarketplace(
     return { items: [], hasMore: false, error: true, needsLocationOrName: false }
   }
 }
+
+function getCurrentCoordinates(
+  row: Record<string, unknown>,
+  tenant: Record<string, unknown>,
+): { latitude: number | null; longitude: number | null } {
+  const status = row.geocode_status
+  const locationIsCurrent = status === 'manual' || (
+    status === 'geocoded' &&
+    typeof row.geocoded_address_hash === 'string' &&
+    row.geocoded_address_hash === hashBusinessAddress({
+      address: typeof tenant.address === 'string' ? tenant.address : null,
+      postalCode: typeof tenant.postal_code === 'string' ? tenant.postal_code : null,
+      city: typeof tenant.city === 'string' ? tenant.city : null,
+      province: typeof tenant.province === 'string' ? tenant.province : null,
+      countryCode: typeof tenant.country_code === 'string' ? tenant.country_code : null,
+    })
+  )
+  if (!locationIsCurrent) return { latitude: null, longitude: null }
+
+  const latitude = Number(row.latitude)
+  const longitude = Number(row.longitude)
+  if (
+    !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+    !Number.isFinite(longitude) || longitude < -180 || longitude > 180
+  ) return { latitude: null, longitude: null }
+
+  return { latitude, longitude }
+}
+
