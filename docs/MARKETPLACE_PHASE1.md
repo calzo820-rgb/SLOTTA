@@ -2,7 +2,7 @@
 
 ## Stato
 
-Fase 1 e ricerca/lista della Fase 2 sono preparate nel branch
+Fase 1, ricerca/lista della Fase 2 e prima vista mappa della Fase 3 sono preparate nel branch
 `feat/marketplace-hidden-phase1`. La migrazione è un file nel repository: non è
 stata applicata a Supabase. Non sono stati effettuati merge o deploy di
 produzione.
@@ -45,10 +45,27 @@ filtri espliciti. La feature flag pubblica è separata dal flag di test interno.
 I metadati noindex riducono l'indicizzazione, ma il controllo server-side è la
 barriera di accesso.
 
+## Mappa e geolocalizzazione
+
+La ricerca offre il passaggio tra lista e mappa interattiva basata su Leaflet.
+I riquadri cartografici sono serviti da OpenStreetMap con attribuzione visibile;
+Leaflet non è Google Maps e non include Street View, immagini satellitari o i
+dati proprietari di Google. I marker si basano esclusivamente su coordinate
+salvate in `tenant_marketplace`; le attività senza coordinate restano nei
+risultati in lista e non ricevono una posizione stimata. La mappa si centra
+sulle coordinate presenti e i popup offrono il link alla prenotazione.
+
+L'uso del servizio standard di tile OpenStreetMap è soggetto alla relativa
+policy, inclusi i limiti di utilizzo e il divieto di traffico massivo/offline.
+Prima di aprire il Marketplace al pubblico, traffico previsto e provider
+cartografico vanno rivalutati; nessuna chiave o servizio a pagamento è stato
+aggiunto.
+
 ## Non ancora implementato
 
 - Nessuna adesione esposta nel profilo gestore e nessun backfill.
-- Nessuna mappa né geocodifica; non viene richiesta la posizione del visitatore.
+- Nessuna geocodifica automatica o correzione manuale delle coordinate; non
+  viene richiesta la posizione del visitatore.
 - Nessuna modifica alla pagina del salone o al flusso di prenotazione.
 
 ## Attivazione e costi
