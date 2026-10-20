@@ -8,6 +8,7 @@ type Props = {
   category: string
   result: MarketplaceSearchResult
   internal?: boolean
+  allowGeocoding?: boolean
 }
 
 const categories = [
@@ -23,6 +24,7 @@ export default function MarketplaceDirectory({
   category,
   result,
   internal = false,
+  allowGeocoding = false,
 }: Props) {
   return (
     <main className="min-h-screen bg-[#F7F6F2] px-4 py-8 text-[#18212B] sm:px-8 sm:py-12">
@@ -100,7 +102,11 @@ export default function MarketplaceDirectory({
               Non abbiamo trovato attività con questi criteri.
             </p>
           ) : (
-            <MarketplaceResults items={result.items} hasMore={result.hasMore} />
+            <MarketplaceResults
+              items={result.items}
+              hasMore={result.hasMore}
+              allowGeocoding={internal && allowGeocoding}
+            />
           )}
         </section>
       </div>
