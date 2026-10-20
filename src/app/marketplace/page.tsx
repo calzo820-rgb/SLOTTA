@@ -1,8 +1,10 @@
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import MarketplaceDirectory from './MarketplaceDirectory'
 import { isMarketplacePublicEnabled } from '@/lib/marketplaceAccess'
 import { searchMarketplace } from '@/lib/marketplaceSearch'
+import { enforceDistributedRateLimit } from '@/lib/apiGuard'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -34,7 +36,18 @@ export default async function MarketplacePage({
   const q = firstValue(params.q).slice(0, 80)
   const city = firstValue(params.city).slice(0, 80)
   const category = firstValue(params.category).slice(0, 30)
-  const result = await searchMarketplace({ q, city, category })
+
+  const requestHeaders = await headers()
+  const limited = await enforceDistributedRateLimit(
+    new Request('https://marketplace.invalid', { headers: requestHeaders }),
+    'marketplace-search',
+    60,
+    60_000,
+  )
+
+  const result = limited
+    ? { items: [], hasMore: false, error: true, needsLocationOrName: false }
+    : await searchMarketplace({ q, city, category })
 
   return (
     <MarketplaceDirectory
