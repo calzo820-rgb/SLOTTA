@@ -77,9 +77,9 @@ sulle coordinate presenti e i popup offrono il link alla prenotazione.
 
 L'uso del servizio standard di tile OpenStreetMap è soggetto alla relativa
 policy, inclusi i limiti di utilizzo e il divieto di traffico massivo/offline.
-La geocodifica Nominatim è manuale e per singola attività: il gestore interno
-deve richiederla esplicitamente, l'indirizzo dev'essere completo e l'attività
-deve avere opt-in attivo. L'hash dell'indirizzo evita richieste ripetute; un
+La geocodifica Nominatim è manuale e per singola attività: il pulsante “Trova
+posizione” appare solo nella lista interna quando il flag è attivo; l'indirizzo
+dev'essere completo e l'attività deve avere opt-in attivo. L'hash dell'indirizzo evita richieste ripetute; un
 gate SQL condiviso serializza le richieste a massimo una al secondo tra le
 istanze Vercel. Sono previste timeout, User-Agent identificativo e endpoint
 HTTPS configurabile. Nessun dato cliente viene inviato. Il servizio può essere
