@@ -79,12 +79,25 @@ L'uso del servizio standard di tile OpenStreetMap è soggetto alla relativa
 policy, inclusi i limiti di utilizzo e il divieto di traffico massivo/offline.
 La geocodifica Nominatim è manuale e per singola attività: il pulsante “Trova
 posizione” appare solo nella lista interna quando il flag è attivo; l'indirizzo
-dev'essere completo e l'attività deve avere opt-in attivo. L'hash dell'indirizzo evita richieste ripetute; un
+dev'essere completo e l'attività deve avere opt-in attivo. L'hash dell'indirizzo
+evita richieste ripetute; un
 gate SQL condiviso serializza le richieste a massimo una al secondo tra le
 istanze Vercel. Sono previste timeout, User-Agent identificativo e endpoint
 HTTPS configurabile. Nessun dato cliente viene inviato. Il servizio può essere
 disabilitato via env; per il lancio pubblico provider e volumi andranno
 riesaminati. Nessuna chiave o servizio a pagamento è stato aggiunto.
+
+Il provider si abilita solo con `MARKETPLACE_GEOCODING_ENABLED=true`,
+`MARKETPLACE_GEOCODING_PROVIDER=nominatim` e un
+`MARKETPLACE_GEOCODING_USER_AGENT` identificativo. L'endpoint HTTPS può essere
+sostituito via `MARKETPLACE_NOMINATIM_ENDPOINT`. Nominatim non è usato per
+autocomplete, ricerche dei clienti o richieste periodiche. La policy impone il
+limite applicativo di una richiesta al secondo, l'identificazione del client e
+la cache dei risultati; prima del lancio pubblico va rivalutato se il servizio
+pubblico è adatto ai volumi e alle condizioni commerciali di Slotta.
+
+Prima dell'attivazione per clienti vanno inoltre valutati l'informativa privacy
+e l'eventuale scelta di un provider alternativo.
 
 Il flag `MARKETPLACE_GEOCODING_ENABLED` resta disattivato per default; anche
 abilitato, l'endpoint richiede accesso interno verificato e un'attività attiva
