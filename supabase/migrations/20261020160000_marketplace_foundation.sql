@@ -46,5 +46,50 @@ alter table public.tenant_marketplace enable row level security;
 revoke all on table public.tenant_marketplace from public, anon, authenticated;
 grant all on table public.tenant_marketplace to service_role;
 
+-- Serialize explicit one-address geocoding requests across Vercel instances.
+create table if not exists public.marketplace_geocoding_gate (
+  singleton boolean primary key default true check (singleton),
+  last_request_at timestamptz
+);
+
+insert into public.marketplace_geocoding_gate (singleton, last_request_at)
+values (true, null)
+on conflict (singleton) do nothing;
+
+alter table public.marketplace_geocoding_gate enable row level security;
+revoke all on table public.marketplace_geocoding_gate from public, anon, authenticated;
+grant select, update on table public.marketplace_geocoding_gate to service_role;
+
+create or replace function public.marketplace_claim_geocoding_slot()
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_last_request_at timestamptz;
+  v_now timestamptz := clock_timestamp();
+begin
+  select last_request_at into v_last_request_at
+  from public.marketplace_geocoding_gate
+  where singleton = true
+  for update;
+
+  if not found then return false; end if;
+  if v_last_request_at is not null
+     and v_last_request_at > v_now - interval '1 second' then
+    return false;
+  end if;
+
+  update public.marketplace_geocoding_gate
+  set last_request_at = v_now
+  where singleton = true;
+  return true;
+end;
+$$;
+
+revoke all on function public.marketplace_claim_geocoding_slot() from public, anon, authenticated;
+grant execute on function public.marketplace_claim_geocoding_slot() to service_role;
+
 -- No backfill: existing tenants remain opted out and absent from the Marketplace
 -- until they explicitly opt in through an approved flow.
