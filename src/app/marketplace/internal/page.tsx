@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import MarketplaceDirectory from '../MarketplaceDirectory'
 import { hasMarketplaceInternalAccess } from '@/lib/marketplaceAccess'
+import { searchMarketplace } from '@/lib/marketplaceSearch'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -10,24 +12,37 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, noarchive: true },
 }
 
-export default async function InternalMarketplacePage() {
+type SearchParams = {
+  q?: string | string[]
+  city?: string | string[]
+  category?: string | string[]
+}
+
+function firstValue(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] || '' : value || ''
+}
+
+export default async function InternalMarketplacePage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
   if (!(await hasMarketplaceInternalAccess())) notFound()
 
+  const params = await searchParams
+  const q = firstValue(params.q).slice(0, 80)
+  const city = firstValue(params.city).slice(0, 80)
+  const category = firstValue(params.category).slice(0, 30)
+  const result = await searchMarketplace({ q, city, category })
+
   return (
-    <main className="min-h-screen bg-[#F7F6F2] px-4 py-10 text-[#18212B] sm:px-8">
-      <section className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#6C7885]">
-          Slotta · area interna
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold">Marketplace V1</h1>
-        <p className="mt-4 text-sm leading-6 text-slate-600">
-          Accesso di test protetto. La ricerca pubblica è disattivata e in questa
-          fase non vengono mostrati né modificati dati delle attività.
-        </p>
-        <div className="mt-6 rounded-2xl bg-[#F7F6F2] p-4 text-sm">
-          Fase 1: base tecnica e accesso interno.
-        </div>
-      </section>
-    </main>
+    <MarketplaceDirectory
+      action="/marketplace/internal"
+      q={q}
+      city={city}
+      category={category}
+      result={result}
+      internal
+    />
   )
 }
