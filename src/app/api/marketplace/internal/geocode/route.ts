@@ -133,6 +133,38 @@ export async function POST(request: Request) {
       return unavailable()
     }
 
+    // The address or opt-in may change while the provider request is in flight.
+    // Never attach a result to a different address or a now-withdrawn listing.
+    const [{ data: latestTenant, error: latestTenantError }, { data: latestSettings, error: latestSettingsError }] =
+      await Promise.all([
+        db.from('tenants')
+          .select('address, city, province, postal_code, country_code, is_active, tenant_mode')
+          .eq('id', tenantId)
+          .maybeSingle(),
+        db.from('tenant_marketplace')
+          .select('opt_in')
+          .eq('tenant_id', tenantId)
+          .maybeSingle(),
+      ])
+    if (latestTenantError) throw latestTenantError
+    if (latestSettingsError) throw latestSettingsError
+    const latestAddress = {
+      address: typeof latestTenant?.address === 'string' ? latestTenant.address : null,
+      postalCode: typeof latestTenant?.postal_code === 'string' ? latestTenant.postal_code : null,
+      city: typeof latestTenant?.city === 'string' ? latestTenant.city : null,
+      province: typeof latestTenant?.province === 'string' ? latestTenant.province : null,
+      countryCode: typeof latestTenant?.country_code === 'string' ? latestTenant.country_code : null,
+    }
+    if (
+      !latestTenant || latestTenant.is_active !== true || latestTenant.tenant_mode !== 'service' ||
+      !latestSettings?.opt_in || hashBusinessAddress(latestAddress) !== addressHash
+    ) {
+      return NextResponse.json(
+        { error: 'Indirizzo o adesione modificati durante la richiesta; riprova.' },
+        { status: 409 },
+      )
+    }
+
     if (!coordinates) {
       const { error } = await db.from('tenant_marketplace')
         .update({ geocode_status: 'failed' })
