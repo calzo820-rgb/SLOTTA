@@ -64,7 +64,7 @@ export default function UserMenu() {
           <button
             type="button"
             onClick={logout}
-            className="w-full px-4 py-2 text-left text-sm font-medium text-[#0F1D2D] hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none"
+            className="w-full px-4 py-2 text-left text-sm font-medium text-[#0F1D2D] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
           >
             🚪 Esci
           </button>
