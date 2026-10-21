@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { getCurrentMarketplaceCoordinates } from '@/lib/marketplaceLocation'
+import { isMarketplaceDemoMode } from '@/lib/marketplaceAccess'
 
 export const MARKETPLACE_CATEGORIES = ['hairdresser', 'barber', 'beauty'] as const
 export type MarketplaceCategory = (typeof MARKETPLACE_CATEGORIES)[number]
@@ -31,6 +32,7 @@ export type MarketplaceResult = {
   latitude: number | null
   longitude: number | null
   bookingUrl: string
+  demoOnly?: boolean
 }
 
 export type MarketplaceSearchResult = {
@@ -74,10 +76,13 @@ export async function searchMarketplace(
   const q = cleanInput(input.q)
   const city = cleanInput(input.city)
   const category = toCategory(input.category)
+  const demoMode = isMarketplaceDemoMode()
 
   if (category === 'invalid') {
     return { items: [], hasMore: false, error: false, needsLocationOrName: false }
   }
+
+  if (demoMode) return searchDemoMarketplace({ q, city, category })
 
   // Avoid exposing a directory-wide dump. Each query must target a salon name
   // or a municipality; category refines that search.
@@ -163,6 +168,79 @@ export async function searchMarketplace(
   } catch {
     return { items: [], hasMore: false, error: true, needsLocationOrName: false }
   }
+}
+
+const DEMO_ITEMS: MarketplaceResult[] = [
+  {
+    id: 'demo-atelier-aurora',
+    name: 'Atelier Aurora · Demo',
+    slug: 'slotta-marketplace-demo-atelier-aurora',
+    logoUrl: null,
+    category: 'hairdresser',
+    categoryLabel: CATEGORY_LABELS.hairdresser,
+    city: 'Limbiate',
+    provinceCode: 'MB',
+    address: 'Via Roma 10',
+    postalCode: '20812',
+    description: 'Scheda fittizia per provare ricerca, lista e mappa.',
+    latitude: 45.6001,
+    longitude: 9.1225,
+    bookingUrl: '#demo-booking-disabled',
+    demoOnly: true,
+  },
+  {
+    id: 'demo-barba-e-baffi',
+    name: 'Barba & Baffi · Demo',
+    slug: 'slotta-marketplace-demo-barba-e-baffi',
+    logoUrl: null,
+    category: 'barber',
+    categoryLabel: CATEGORY_LABELS.barber,
+    city: 'Cesano Maderno',
+    provinceCode: 'MB',
+    address: 'Via Dante 4',
+    postalCode: '20811',
+    description: 'Attività inventata; la prenotazione non è attiva.',
+    latitude: 45.6292,
+    longitude: 9.1438,
+    bookingUrl: '#demo-booking-disabled',
+    demoOnly: true,
+  },
+  {
+    id: 'demo-studio-benessere',
+    name: 'Studio Benessere · Demo',
+    slug: 'slotta-marketplace-demo-studio-benessere',
+    logoUrl: null,
+    category: 'beauty',
+    categoryLabel: CATEGORY_LABELS.beauty,
+    city: 'Desio',
+    provinceCode: 'MB',
+    address: 'Via Garibaldi 18',
+    postalCode: '20832',
+    description: 'Scheda fittizia con posizione dimostrativa sulla mappa.',
+    latitude: 45.6183,
+    longitude: 9.2087,
+    bookingUrl: '#demo-booking-disabled',
+    demoOnly: true,
+  },
+]
+
+function searchDemoMarketplace({
+  q,
+  city,
+  category,
+}: {
+  q: string
+  city: string
+  category: MarketplaceCategory | null
+}): MarketplaceSearchResult {
+  const normalizedQuery = q.toLocaleLowerCase('it-IT')
+  const normalizedCity = city.toLocaleLowerCase('it-IT')
+  const items = DEMO_ITEMS
+    .filter(item => !category || item.category === category)
+    .filter(item => !normalizedQuery || item.name.toLocaleLowerCase('it-IT').includes(normalizedQuery))
+    .filter(item => !normalizedCity || item.city.toLocaleLowerCase('it-IT').startsWith(normalizedCity))
+    .sort((a, b) => a.name.localeCompare(b.name, 'it'))
+  return { items, hasMore: false, error: false, needsLocationOrName: false }
 }
 
 
