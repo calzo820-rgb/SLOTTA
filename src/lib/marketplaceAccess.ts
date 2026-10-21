@@ -8,6 +8,11 @@ export function isMarketplacePublicEnabled(): boolean {
   return isEnabled(process.env.MARKETPLACE_ENABLED)
 }
 
+export function isMarketplaceDemoMode(): boolean {
+  if (!isEnabled(process.env.MARKETPLACE_DEMO_MODE)) return false
+  return process.env.VERCEL_ENV === 'preview' || process.env.NODE_ENV === 'development'
+}
+
 /**
  * Internal preview access is intentionally independent from the public flag.
  * It requires an explicit environment switch, an email allowlist, a signed-in
