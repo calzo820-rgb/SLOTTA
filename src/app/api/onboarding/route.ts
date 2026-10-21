@@ -2,9 +2,53 @@ import { randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
+import { sendTransactionalEmail } from '@/lib/transactionalEmail'
 
 function generateStaffLoginCode() {
   return String(randomInt(100_000, 1_000_000));
+}
+
+async function notifyNewActivityRegistration(input: {
+  tenantId: string
+  businessName: string
+  contactEmail: string
+  slug: string
+}) {
+  const to = process.env.LEADS_NOTIFY_EMAIL?.trim()
+  if (!to || !process.env.RESEND_API_KEY) {
+    console.error('new tenant notification skipped: email configuration missing')
+    return
+  }
+
+  const registeredAt = new Intl.DateTimeFormat('it-IT', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'Europe/Rome',
+  }).format(new Date())
+
+  try {
+    await sendTransactionalEmail(
+      {
+        from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+        to,
+        subject: `Nuova attività registrata su Slotta: ${input.businessName}`,
+        text: [
+          'Una nuova attività ha completato la registrazione su Slotta ed è in attesa di attivazione manuale.',
+          '',
+          `Attività: ${input.businessName}`,
+          `Email di contatto: ${input.contactEmail}`,
+          `Slug: ${input.slug}`,
+          `Registrazione: ${registeredAt}`,
+        ].join('\\n'),
+      },
+      `new-tenant-registration-${input.tenantId}`,
+    )
+  } catch (error) {
+    console.error('new tenant notification email failed', {
+      tenantId: input.tenantId,
+      message: error instanceof Error ? error.message : 'Unknown email error',
+    })
+  }
 }
 
 function slugify(input: string) {
@@ -226,6 +270,8 @@ if (hoursErr) {
     { status: 500 }
   );
 }
+
+await notifyNewActivityRegistration({ tenantId, businessName, contactEmail, slug: tenantInsert.slug });
 
 return NextResponse.json({ tenantId, slug: tenantInsert.slug }, { status: 200 });
  } catch (e: unknown) {
