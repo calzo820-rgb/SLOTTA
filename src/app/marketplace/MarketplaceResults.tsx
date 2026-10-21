@@ -74,9 +74,15 @@ export default function MarketplaceResults({
                     ? <GeocodeButton tenantId={item.id} />
                     : null}
                 </div>
-                <Link href={item.bookingUrl} className="mt-4 inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-[#18212B] px-5 text-sm font-bold text-white transition hover:bg-[#304253] sm:mt-0">
-                  Prenota
-                </Link>
+                {item.demoOnly ? (
+                  <span className="mt-4 inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 px-4 text-xs font-semibold text-slate-500 sm:mt-0">
+                    Prenotazione non attiva
+                  </span>
+                ) : (
+                  <Link href={item.bookingUrl} className="mt-4 inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-[#18212B] px-5 text-sm font-bold text-white transition hover:bg-[#304253] sm:mt-0">
+                    Prenota
+                  </Link>
+                )}
               </article>
             </li>
           ))}
