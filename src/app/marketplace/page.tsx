@@ -2,7 +2,7 @@ import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import MarketplaceDirectory from './MarketplaceDirectory'
-import { isMarketplacePublicEnabled } from '@/lib/marketplaceAccess'
+import { isMarketplaceDemoMode, isMarketplacePublicEnabled } from '@/lib/marketplaceAccess'
 import { searchMarketplace } from '@/lib/marketplaceSearch'
 import { enforceDistributedRateLimit } from '@/lib/apiGuard'
 
@@ -36,13 +36,14 @@ export default async function MarketplacePage({
   const q = firstValue(params.q).slice(0, 80)
   const city = firstValue(params.city).slice(0, 80)
   const category = firstValue(params.category).slice(0, 30)
+  const demoMode = isMarketplaceDemoMode()
 
   const incomingHeaders = await headers()
   const requestHeaders = new Headers()
   const forwardedFor = incomingHeaders.get('x-forwarded-for')
   if (forwardedFor) requestHeaders.set('x-forwarded-for', forwardedFor)
 
-  const limited = await enforceDistributedRateLimit(
+  const limited = demoMode ? null : await enforceDistributedRateLimit(
     new Request('https://marketplace.invalid', { headers: requestHeaders }),
     'marketplace-search',
     60,
@@ -60,6 +61,7 @@ export default async function MarketplacePage({
       city={city}
       category={category}
       result={result}
+      demoMode={demoMode}
     />
   )
 }
