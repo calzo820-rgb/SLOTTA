@@ -39,7 +39,7 @@ async function notifyNewActivityRegistration(input: {
           `Email di contatto: ${input.contactEmail}`,
           `Slug: ${input.slug}`,
           `Registrazione: ${registeredAt}`,
-        ].join('\\n'),
+        ].join('\n'),
       },
       `new-tenant-registration-${input.tenantId}`,
     )
