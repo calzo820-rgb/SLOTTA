@@ -57,12 +57,16 @@ export default function MarketplaceMap({ items }: Props) {
                     {item.categoryLabel} · {item.city}
                   </p>
                   {item.address ? <p className="mt-1 text-xs text-slate-600">{item.address}</p> : null}
-                  <Link
-                    href={item.bookingUrl}
-                    className="mt-3 inline-flex rounded-lg bg-[#18212B] px-3 py-2 text-xs font-bold text-white"
-                  >
-                    Prenota
-                  </Link>
+                  {item.demoOnly ? (
+                    <p className="mt-2 text-xs font-semibold text-slate-500">Prenotazione non attiva (demo)</p>
+                  ) : (
+                    <Link
+                      href={item.bookingUrl}
+                      className="mt-3 inline-flex rounded-lg bg-[#18212B] px-3 py-2 text-xs font-bold text-white"
+                    >
+                      Prenota
+                    </Link>
+                  )}
                 </div>
               </Popup>
             </CircleMarker>
