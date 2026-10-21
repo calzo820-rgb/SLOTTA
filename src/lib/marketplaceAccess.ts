@@ -5,7 +5,12 @@ function isEnabled(value: string | undefined): boolean {
 }
 
 export function isMarketplacePublicEnabled(): boolean {
-  return isEnabled(process.env.MARKETPLACE_ENABLED)
+  if (!isEnabled(process.env.MARKETPLACE_ENABLED)) return false
+  if (
+    process.env.VERCEL_ENV === 'production' &&
+    !isEnabled(process.env.MARKETPLACE_PUBLIC_LAUNCH_ENABLED)
+  ) return false
+  return true
 }
 
 export function isMarketplaceDemoMode(): boolean {
