@@ -118,3 +118,18 @@ un ambiente Preview autorizzato. Non impostarli in produzione durante questa
 fase. Per la parte cartografica si userà un provider selezionabile; Leaflet è
 solo la libreria UI e richiede attribuzione e condizioni d'uso del provider.
 La scelta e l'eventuale piano a pagamento restano separati dalla lista.
+
+## Preview con dati fittizi
+
+Per la revisione visuale il branch `feat/marketplace-hidden-phase1` può attivare
+`MARKETPLACE_ENABLED=true` e `MARKETPLACE_DEMO_MODE=true` esclusivamente nelle
+variabili Preview branch-specific di Vercel. Questa modalità serve tre schede
+fittizie con coordinate dimostrative e filtri locali; non interroga Supabase,
+non applica rate limit tramite database e non abilita prenotazioni o
+geocodifica. La pagina mostra un avviso visibile che i dati sono di prova.
+
+La modalità demo è disabilitata sul runtime Vercel Production. In Production
+la pagina richiede anche il flag separato
+`MARKETPLACE_PUBLIC_LAUNCH_ENABLED=true`, che non viene impostato con questa
+modifica. I flag Preview vanno rimossi dopo il test; non costituiscono
+autorizzazione al lancio pubblico.
