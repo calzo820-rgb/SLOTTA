@@ -99,10 +99,13 @@ const loadPendingCount = useCallback(async () => {
   <button
     type="button"
     onClick={() => setMenuOpen(!menuOpen)}
-    className="relative z-10 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#D7EEF0] bg-white text-2xl shadow-sm transition hover:border-[#1FA7A6]/50"
+    className="relative z-10 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#D7EEF0] bg-white text-[#0F1D2D] shadow-sm transition hover:border-[#1FA7A6]/50 hover:bg-[#F3FBFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1FA7A6] focus-visible:ring-offset-2"
     aria-label="Apri menu"
+    aria-expanded={menuOpen}
   >
-    ☰
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round">
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
 
     {pendingCount > 0 && (
       <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-black flex items-center justify-center leading-none shadow-sm ring-2 ring-white">

@@ -33,10 +33,11 @@ export default function UserMenu() {
   onClick={() => setOpen(v => !v)}
   aria-label="Account"
   title="Account"
+  aria-expanded={open}
   className="
     group
-    h-10 w-10 rounded-full border
-    bg-white flex items-center justify-center
+    flex h-10 w-10 items-center justify-center rounded-full border border-slate-200
+    bg-white text-[#0F1D2D]
     transition-all duration-200 ease-out
     hover:-translate-y-[1px]
     hover:scale-105
@@ -46,24 +47,24 @@ export default function UserMenu() {
     active:shadow-sm
   "
 >
-  <span className="transition-transform duration-200 group-hover:rotate-6">
-    👤
-  </span>
+  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6 transition-transform duration-200 group-hover:rotate-6" fill="currentColor">
+    <path d="M12 12a4.25 4.25 0 1 0 0-8.5 4.25 4.25 0 0 0 0 8.5Zm0 2c-4.1 0-7.5 2.1-7.5 4.75V21h15v-2.25C19.5 16.1 16.1 14 12 14Z" />
+  </svg>
 </button>
 
 
 
       {open && (
-        <div className="absolute right-0 mt-2 w-52 bg-white border rounded-2xl shadow-lg overflow-hidden z-50">
-          <div className="px-4 py-3 border-b">
-            <div className="text-sm font-semibold">Account</div>
+        <div className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white text-[#0F1D2D] shadow-lg">
+          <div className="border-b border-slate-100 px-4 py-3">
+            <div className="text-sm font-semibold text-[#0F1D2D]">Account</div>
            
           </div>
 
           <button
             type="button"
             onClick={logout}
-            className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-50"
+            className="w-full px-4 py-2 text-left text-sm font-medium text-[#0F1D2D] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
           >
             🚪 Esci
           </button>
