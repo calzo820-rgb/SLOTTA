@@ -9,6 +9,7 @@ type Props = {
   result: MarketplaceSearchResult
   internal?: boolean
   allowGeocoding?: boolean
+  demoMode?: boolean
 }
 
 const categories = [
@@ -25,6 +26,7 @@ export default function MarketplaceDirectory({
   result,
   internal = false,
   allowGeocoding = false,
+  demoMode = false,
 }: Props) {
   return (
     <main className="min-h-screen bg-[#F7F6F2] px-4 py-8 text-[#18212B] sm:px-8 sm:py-12">
@@ -33,6 +35,12 @@ export default function MarketplaceDirectory({
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-[#6C7885]">
             Slotta · anteprima interna
           </p>
+        ) : null}
+        {demoMode ? (
+          <div className="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+            <strong>Anteprima di test:</strong> le attività e le posizioni sono fittizie.
+            Le prenotazioni non sono attive.
+          </div>
         ) : null}
         <h1 className="text-3xl font-semibold sm:text-4xl">
           Trova un’attività
