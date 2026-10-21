@@ -1,6 +1,11 @@
+import { randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
+
+function generateStaffLoginCode() {
+  return String(randomInt(100_000, 1_000_000));
+}
 
 function slugify(input: string) {
   return input
@@ -92,24 +97,51 @@ export async function POST(req: Request) {
     // slug unico: aggiungo 4 char random per ridurre collisioni senza loop infinito
     const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
 
-    const { data: tenantInsert, error: tenantErr } = await supabaseAdmin
-      .from("tenants")
-      .insert({
-  name: businessName,
-  slug,
-  tenant_mode: "service",
-  is_active: false,
-  primary_color: "#1FA7A6",
-  secondary_color: "#0F1D2D",
-  contact_email: contactEmail,
-})
-      .select("id, slug")
-      .single();
+    // staff_login_code is required and unique in the database.
+    // Retry only this specific unique-key collision; other insert failures are returned immediately.
+    let tenantInsert: { id: string; slug: string } | null = null;
+    let tenantErr: { code?: string; message: string; details?: string } | null = null;
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const result = await supabaseAdmin
+        .from("tenants")
+        .insert({
+          name: businessName,
+          slug,
+          tenant_mode: "service",
+          is_active: false,
+          primary_color: "#1FA7A6",
+          secondary_color: "#0F1D2D",
+          contact_email: contactEmail,
+          staff_login_code: generateStaffLoginCode(),
+        })
+        .select("id, slug")
+        .single();
+
+      if (!result.error && result.data) {
+        tenantInsert = result.data;
+        tenantErr = null;
+        break;
+      }
+
+      tenantErr = result.error;
+      const uniqueConflictText = `${result.error?.message || ""} ${result.error?.details || ""}`;
+      const isStaffCodeConflict =
+        result.error?.code === "23505" &&
+        /staff_login_code/i.test(uniqueConflictText);
+
+      if (!isStaffCodeConflict) break;
+    }
 
     if (tenantErr || !tenantInsert) {
+      console.error("onboarding tenant insert failed", {
+        code: tenantErr?.code || null,
+        message: tenantErr?.message || null,
+        details: tenantErr?.details || null,
+      });
       return NextResponse.json(
         { error: "Failed to create tenant" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
