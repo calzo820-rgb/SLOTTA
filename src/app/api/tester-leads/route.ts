@@ -89,6 +89,7 @@ export async function POST(req: Request) {
     const contactName = cleanText(body.contactName, 120)
     const phone = cleanText(body.phone, 40)
     const city = cleanText(body.city, 80)
+    const municipalityCode = cleanText(body.municipalityCode, 6)
     const message = cleanText(body.message, 800)
     const source = cleanText(body.source || 'tester_page', 80)
     const pagePath = cleanText(body.pagePath || '/tester', 300)
@@ -116,9 +117,22 @@ export async function POST(req: Request) {
       )
     }
 
-    if (city.length < 2) {
+    if (city.length < 2 || !/^[0-9]{6}$/.test(municipalityCode)) {
       return NextResponse.json(
-        { error: 'Inserisci il comune.' },
+        { error: 'Seleziona un comune dall’elenco.' },
+        { status: 400 },
+      )
+    }
+
+    const { data: municipality, error: municipalityError } = await getSupabaseAdmin()
+      .from('italian_municipalities')
+      .select('name')
+      .eq('code_istat', municipalityCode)
+      .maybeSingle()
+
+    if (municipalityError || !municipality || municipality.name !== city) {
+      return NextResponse.json(
+        { error: 'Il comune selezionato non è valido. Sceglilo di nuovo dall’elenco.' },
         { status: 400 },
       )
     }

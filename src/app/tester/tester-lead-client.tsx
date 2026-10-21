@@ -1,12 +1,14 @@
 'use client'
 
 import { FormEvent, useMemo, useState } from 'react'
+import MunicipalityPicker, { type MunicipalityOption } from '@/components/admin/MunicipalityPicker'
 
 type FormState = {
   salonName: string
   contactName: string
   phone: string
   city: string
+  municipalityCode: string | null
   message: string
   companyWebsite: string
 }
@@ -16,6 +18,7 @@ const initialForm: FormState = {
   contactName: '',
   phone: '',
   city: '',
+  municipalityCode: null,
   message: '',
   companyWebsite: '',
 }
@@ -70,8 +73,8 @@ export default function TesterLeadClient() {
       return
     }
 
-    if (!form.city.trim() || form.city.trim().length < 2) {
-      setError('Inserisci il comune.')
+    if (!form.city.trim() || !form.municipalityCode) {
+      setError('Seleziona un comune dall’elenco.')
       return
     }
 
@@ -88,6 +91,7 @@ export default function TesterLeadClient() {
           contactName: form.contactName,
           phone: form.phone,
           city: form.city,
+          municipalityCode: form.municipalityCode,
           message: form.message,
           companyWebsite: form.companyWebsite,
           source: params.get('source') || 'tester_page',
@@ -338,19 +342,17 @@ export default function TesterLeadClient() {
             />
           </label>
 
-          <label className="grid gap-1.5">
-            <span className="text-sm font-black text-[#0F1D2D]">Comune</span>
-            <input
-              required
-              value={form.city}
-              onChange={e =>
-                setForm(prev => ({ ...prev, city: e.target.value }))
-              }
-              placeholder="Es. Desio"
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1FA7A6] focus:ring-4 focus:ring-[#1FA7A6]/10"
-              autoComplete="address-level2"
-            />
-          </label>
+          <MunicipalityPicker
+            value={form.city}
+            selectedCode={form.municipalityCode}
+            onSelect={(municipality: MunicipalityOption | null) =>
+              setForm(prev => ({
+                ...prev,
+                city: municipality?.name || '',
+                municipalityCode: municipality?.code_istat || null,
+              }))
+            }
+          />
 
           <label className="grid gap-1.5">
             <span className="text-sm font-black text-[#0F1D2D]">
