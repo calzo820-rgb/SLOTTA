@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
@@ -26,8 +26,34 @@ function LoginContent() {
   const [checkingSession, setCheckingSession] = useState(true)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-
   const next = safeInternalPath(sp.get('next'), '/admin')
+
+  const routeAuthenticatedUser = useCallback(async (userId: string) => {
+    const { data: membership, error } = await supabase
+      .from('tenant_users')
+      .select('is_active')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw error
+
+    if (membership && membership.is_active !== true) {
+      router.replace('/account-pending')
+      return
+    }
+
+    if (!membership) {
+      await supabase.auth.signOut()
+      setErr('Il tuo account non è ancora associato a un’attività. Completa la registrazione o contatta l’assistenza.')
+      setCheckingSession(false)
+      setLoading(false)
+      return
+    }
+
+    router.replace(next)
+  }, [next, router])
 
 useEffect(() => {
   let cancelled = false
@@ -47,7 +73,7 @@ useEffect(() => {
       }
 
       if (data.session) {
-        router.replace(next)
+        await routeAuthenticatedUser(data.session.user.id)
         return
       }
 
@@ -66,7 +92,7 @@ useEffect(() => {
   return () => {
     cancelled = true
   }
-}, [router, next])
+}, [router, next, routeAuthenticatedUser])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -115,11 +141,12 @@ useEffect(() => {
         throw new Error('Sessione non creata.')
       }
 
-setCheckingSession(true)
-router.replace(next)
+      setCheckingSession(true)
+      await routeAuthenticatedUser(authData.session.user.id)
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Errore login'
       setErr(message)
+      setCheckingSession(false)
       setLoading(false)
     }
   }
