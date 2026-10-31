@@ -58,7 +58,7 @@ export default function TesterLeadClient() {
     setError(null)
 
     if (!form.salonName.trim() || form.salonName.trim().length < 2) {
-      setError('Inserisci il nome del salone.')
+      setError('Inserisci il nome dell’attività.')
       return
     }
 
@@ -186,7 +186,7 @@ export default function TesterLeadClient() {
             >
               Sì, voglio essere ricontattato
               <span className="mt-1 block text-xs font-bold text-[#0F1D2D]/70">
-                Compilo nome salone, referente, WhatsApp e comune.
+                Compilo nome attività, referente, WhatsApp e comune.
               </span>
             </button>
 
@@ -294,7 +294,7 @@ export default function TesterLeadClient() {
 
           <label className="grid gap-1.5">
             <span className="text-sm font-black text-[#0F1D2D]">
-              Nome salone
+              Nome attività
             </span>
             <input
               required
