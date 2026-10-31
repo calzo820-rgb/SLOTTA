@@ -15,6 +15,7 @@ async function notifyNewActivityRegistration(input: {
   slug: string
 }) {
   const to = process.env.LEADS_NOTIFY_EMAIL?.trim()
+  const cc = process.env.LEADS_NOTIFY_CC?.trim()
   if (!to || !process.env.RESEND_API_KEY) {
     console.error('new tenant notification skipped: email configuration missing')
     return
@@ -31,6 +32,7 @@ async function notifyNewActivityRegistration(input: {
       {
         from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
         to,
+        ...(cc ? { cc } : {}),
         subject: `Nuova attività registrata su Slotta: ${input.businessName}`,
         text: [
           'Una nuova attività ha completato la registrazione su Slotta ed è in attesa di attivazione manuale.',
