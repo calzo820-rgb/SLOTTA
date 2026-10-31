@@ -22,7 +22,7 @@ async function onSubmit(e: React.FormEvent) {
   e.preventDefault()
   setErr(null)
 
-  if (!salonName.trim()) return setErr('Inserisci il nome del salone.')
+  if (!salonName.trim()) return setErr('Inserisci il nome dell’attività.')
   const authEmail = publicEmail.trim().toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail)) {
     return setErr('Inserisci una email valida.')
@@ -70,7 +70,7 @@ async function onSubmit(e: React.FormEvent) {
 
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      throw new Error(data?.error || 'Errore creazione salone.')
+      throw new Error(data?.error || 'Errore creazione attività.')
     }
 
     setLoading(false)
@@ -108,7 +108,7 @@ async function onSubmit(e: React.FormEvent) {
         ) : null}
 
         <label className="grid gap-1">
-          <span className="text-xs text-zinc-500">Nome salone</span>
+          <span className="text-xs text-zinc-500">Nome attività</span>
           <input
             value={salonName}
             onChange={e => setSalonName(e.target.value)}
@@ -121,13 +121,13 @@ async function onSubmit(e: React.FormEvent) {
         </label>
 
         <label className="grid gap-1">
-          <span className="text-xs text-zinc-500">Email salone (contatto)</span>
+          <span className="text-xs text-zinc-500">Email attività (contatto)</span>
           <input
             type="email"
             value={publicEmail}
             onChange={e => setPublicEmail(e.target.value)}
             className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-[#1FA7A6] focus:ring-2 focus:ring-[#1FA7A6]/10"
-            placeholder="es. info@tuosalone.it"
+            placeholder="es. info@tuaattivita.it"
             autoComplete="email"
             maxLength={254}
             required
