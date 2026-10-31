@@ -51,7 +51,8 @@ async function notifyTelegram(text: string) {
 }
 
 async function notifyEmail(subject: string, text: string, leadId: string) {
-  const to = process.env.LEADS_NOTIFY_EMAIL
+  const to = process.env.LEADS_NOTIFY_EMAIL?.trim()
+  const cc = process.env.LEADS_NOTIFY_CC?.trim()
   const from = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
   if (!to || !process.env.RESEND_API_KEY) {
@@ -63,6 +64,7 @@ async function notifyEmail(subject: string, text: string, leadId: string) {
     await sendTransactionalEmail({
       from,
       to,
+      ...(cc ? { cc } : {}),
       subject,
       text,
     }, `tester-lead-${leadId}`)
