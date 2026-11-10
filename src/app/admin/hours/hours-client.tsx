@@ -343,16 +343,16 @@ const settingsInvalid =
       {/* HEADER PAGINA */}
 <div className="flex flex-wrap items-start justify-between gap-4">
   <div>
-    <p className="hidden md:block text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
+    <p className="text-xs font-black uppercase tracking-wide text-[#1FA7A6] md:text-sm">
       Area gestore
     </p>
 
-    <h1 className="hidden md:block text-3xl font-black tracking-tight text-[#0F1D2D]">
-      Orari & capacità
+    <h1 className="mt-1 text-2xl font-black tracking-tight text-[#0F1D2D] md:text-3xl">
+      Impostazioni
     </h1>
 
-    <p className="text-sm text-slate-600 md:mt-1">
-      Configura quando i clienti possono prenotare e quante prenotazioni puoi gestire.
+    <p className="mt-1 text-sm text-slate-600">
+      Gestisci gli orari, le prenotazioni e le preferenze della tua attività.
     </p>
   </div>
         <div className="hidden items-center gap-3 md:flex">
@@ -385,200 +385,199 @@ const settingsInvalid =
           {error}
         </div>
       ) : null}
-<Card
-  title="Regole di prenotazione"
-  subtitle="Decidi ogni quanto mostrare gli orari, quanto prima si può prenotare e come assegnare gli operatori."
-  right={
-    <button
-      type="button"
-      onClick={() => toggleMobileSection('rules')}
-      className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#0F1D2D] transition hover:border-[#1FA7A6] hover:text-[#1FA7A6] md:hidden"
-    >
-      {mobileSections.rules ? '▲' : '▼'}
-    </button>
-  }
->
-  <div className={mobileSections.rules ? 'grid gap-4 p-5' : 'hidden gap-4 p-5 md:grid'}>
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-  <Field
-    label="Intervallo tra gli orari disponibili"
-    hint="Esempio: con 30 minuti il cliente vedrà orari come 09:00, 09:30, 10:00."
+<div className="grid gap-5">
+  <Card
+    title="Regole di prenotazione"
+    subtitle="Decidi quando i clienti possono prenotare o annullare."
   >
-    <select
-      value={settings.slot_minutes}
-      onChange={e => {
-        setSettings(s => ({
-          ...s,
-          slot_minutes: e.target.value,
-        }))
-        setSavedFlag(false)
-      }}
-      className={[
-        'h-11 rounded-2xl border bg-white px-4 text-sm outline-none transition focus:ring-2',
-        !settings.slot_minutes.trim() || Number(settings.slot_minutes) <= 0
-          ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
-          : 'border-slate-200 focus:border-[#1FA7A6] focus:ring-[#1FA7A6]/10',
-      ].join(' ')}
-    >
-      <option value="10">Ogni 10 minuti</option>
-      <option value="15">Ogni 15 minuti</option>
-      <option value="20">Ogni 20 minuti</option>
-      <option value="30">Ogni 30 minuti</option>
-      <option value="60">Ogni 60 minuti</option>
-    </select>
-  </Field>
+    <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
+      <Field
+        label="Intervallo tra gli orari disponibili"
+        hint="Esempio: con 30 minuti il cliente vedrà orari come 09:00, 09:30, 10:00."
+      >
+        <select
+          value={settings.slot_minutes}
+          onChange={e => {
+            setSettings(s => ({ ...s, slot_minutes: e.target.value }))
+            setSavedFlag(false)
+          }}
+          className={[
+            'h-12 w-full min-w-0 rounded-2xl border bg-white px-4 text-base outline-none transition focus:ring-2',
+            !settings.slot_minutes.trim() || Number(settings.slot_minutes) <= 0
+              ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
+              : 'border-slate-200 focus:border-[#1FA7A6] focus:ring-[#1FA7A6]/10',
+          ].join(' ')}
+        >
+          <option value="10">Ogni 10 minuti</option>
+          <option value="15">Ogni 15 minuti</option>
+          <option value="20">Ogni 20 minuti</option>
+          <option value="30">Ogni 30 minuti</option>
+          <option value="60">Ogni 60 minuti</option>
+        </select>
+      </Field>
 
-  <Field
-    label="Quanto prima può prenotare il cliente"
-    hint="Evita prenotazioni troppo ravvicinate. Esempio: 30 minuti prima."
-  >
-    <select
-      value={settings.lead_minutes}
-      onChange={e => {
-        setSettings(s => ({
-          ...s,
-          lead_minutes: e.target.value,
-        }))
-        setSavedFlag(false)
-      }}
-      className={[
-        'h-11 rounded-2xl border bg-white px-4 text-sm outline-none transition focus:ring-2',
-        !settings.lead_minutes.trim() || Number(settings.lead_minutes) < 0
-          ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
-          : 'border-slate-200 focus:border-[#1FA7A6] focus:ring-[#1FA7A6]/10',
-      ].join(' ')}
-    >
-      <option value="0">Anche subito</option>
-      <option value="15">Almeno 15 minuti prima</option>
-      <option value="30">Almeno 30 minuti prima</option>
-      <option value="60">Almeno 1 ora prima</option>
-      <option value="120">Almeno 2 ore prima</option>
-      <option value="240">Almeno 4 ore prima</option>
-      <option value="1440">Almeno 1 giorno prima</option>
-    </select>
-  </Field>
+      <Field
+        label="Quanto prima può prenotare il cliente"
+        hint="Evita prenotazioni troppo ravvicinate. Esempio: 30 minuti prima."
+      >
+        <select
+          value={settings.lead_minutes}
+          onChange={e => {
+            setSettings(s => ({ ...s, lead_minutes: e.target.value }))
+            setSavedFlag(false)
+          }}
+          className={[
+            'h-12 w-full min-w-0 rounded-2xl border bg-white px-4 text-base outline-none transition focus:ring-2',
+            !settings.lead_minutes.trim() || Number(settings.lead_minutes) < 0
+              ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
+              : 'border-slate-200 focus:border-[#1FA7A6] focus:ring-[#1FA7A6]/10',
+          ].join(' ')}
+        >
+          <option value="0">Anche subito</option>
+          <option value="15">Almeno 15 minuti prima</option>
+          <option value="30">Almeno 30 minuti prima</option>
+          <option value="60">Almeno 1 ora prima</option>
+          <option value="120">Almeno 2 ore prima</option>
+          <option value="240">Almeno 4 ore prima</option>
+          <option value="1440">Almeno 1 giorno prima</option>
+        </select>
+      </Field>
 
-  <Field
-    label="Preavviso minimo per annullare"
-    hint="Il cliente potrà annullare autonomamente solo prima di questo limite. Le prenotazioni già pagate richiedono sempre il contatto con l’attività."
-  >
-    <select
-      value={settings.customer_cancellation_notice_hours}
-      onChange={e => {
-        setSettings(s => ({
-          ...s,
-          customer_cancellation_notice_hours: e.target.value,
-        }))
-        setSavedFlag(false)
-      }}
-      className={[
-        'h-11 rounded-2xl border bg-white px-4 text-sm outline-none transition focus:ring-2',
-        !settings.customer_cancellation_notice_hours.trim() ||
-        Number(settings.customer_cancellation_notice_hours) < 0
-          ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
-          : 'border-slate-200 focus:border-[#1FA7A6] focus:ring-[#1FA7A6]/10',
-      ].join(' ')}
-    >
-      <option value="0">Fino all’orario dell’appuntamento</option>
-      <option value="1">Almeno 1 ora prima</option>
-      <option value="2">Almeno 2 ore prima</option>
-      <option value="4">Almeno 4 ore prima</option>
-      <option value="12">Almeno 12 ore prima</option>
-      <option value="24">Almeno 1 giorno prima</option>
-      <option value="48">Almeno 2 giorni prima</option>
-      <option value="72">Almeno 3 giorni prima</option>
-      <option value="168">Almeno 7 giorni prima</option>
-    </select>
-  </Field>
+      <Field
+        label="Preavviso minimo per annullare"
+        hint="Il cliente potrà annullare autonomamente solo prima di questo limite. Le prenotazioni già pagate richiedono sempre il contatto con l’attività."
+      >
+        <select
+          value={settings.customer_cancellation_notice_hours}
+          onChange={e => {
+            setSettings(s => ({
+              ...s,
+              customer_cancellation_notice_hours: e.target.value,
+            }))
+            setSavedFlag(false)
+          }}
+          className={[
+            'h-12 w-full min-w-0 rounded-2xl border bg-white px-4 text-base outline-none transition focus:ring-2',
+            !settings.customer_cancellation_notice_hours.trim() ||
+            Number(settings.customer_cancellation_notice_hours) < 0
+              ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
+              : 'border-slate-200 focus:border-[#1FA7A6] focus:ring-[#1FA7A6]/10',
+          ].join(' ')}
+        >
+          <option value="0">Fino all’orario dell’appuntamento</option>
+          <option value="1">Almeno 1 ora prima</option>
+          <option value="2">Almeno 2 ore prima</option>
+          <option value="4">Almeno 4 ore prima</option>
+          <option value="12">Almeno 12 ore prima</option>
+          <option value="24">Almeno 1 giorno prima</option>
+          <option value="48">Almeno 2 giorni prima</option>
+          <option value="72">Almeno 3 giorni prima</option>
+          <option value="168">Almeno 7 giorni prima</option>
+        </select>
+      </Field>
+    </div>
+  </Card>
 
-  <Field
-    label="Appuntamenti contemporanei massimi"
-    hint="Quanti clienti puoi gestire nello stesso orario. Di solito coincide con il numero di operatori disponibili."
+  <Card
+    title="Operatori e capacità"
+    subtitle="Gestisci quanti appuntamenti puoi accettare e come assegnare gli operatori."
   >
-    <input
-      type="number"
-      min={1}
-      value={settings.service_staff_count}
-      onChange={e => {
-        setSettings(s => ({
-          ...s,
-          service_staff_count: e.target.value,
-        }))
-        setSavedFlag(false)
-      }}
-      className={[
-        'h-11 rounded-2xl border px-4 text-sm outline-none transition focus:ring-2',
-        !settings.service_staff_count.trim() || Number(settings.service_staff_count) <= 0
-          ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
-          : 'border-slate-200 focus:border-[#1FA7A6] focus:ring-[#1FA7A6]/10',
-      ].join(' ')}
-      placeholder="Es. 1"
-    />
-  </Field>
+    <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
+      <Field
+        label="Appuntamenti contemporanei massimi"
+        hint="Quanti clienti possono essere serviti nello stesso momento. Ad esempio, 2 consente due appuntamenti contemporanei."
+      >
+        <input
+          type="number"
+          min={1}
+          value={settings.service_staff_count}
+          onChange={e => {
+            setSettings(s => ({
+              ...s,
+              service_staff_count: e.target.value,
+            }))
+            setSavedFlag(false)
+          }}
+          className={[
+            'h-12 w-full min-w-0 rounded-2xl border px-4 text-base outline-none transition focus:ring-2',
+            !settings.service_staff_count.trim() || Number(settings.service_staff_count) <= 0
+              ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100'
+              : 'border-slate-200 focus:border-[#1FA7A6] focus:ring-[#1FA7A6]/10',
+          ].join(' ')}
+          placeholder="Es. 1"
+        />
+      </Field>
 
-  <Field
-    label="Metodo di pagamento"
-    hint="Per iniziare, consigliato: pagamento in salone."
-  >
-    <select
-      value={settings.payment_mode_default}
-      onChange={e => {
-        setSettings(s => ({
-          ...s,
-          payment_mode_default: e.target.value as Settings['payment_mode_default'],
-        }))
-        setSavedFlag(false)
-      }}
-      className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#1FA7A6] focus:ring-2 focus:ring-[#1FA7A6]/10"
-    >
-      <option value="in_person">Pagamento in salone</option>
-      <option value="online">Pagamento online</option>
-      <option value="client_choice">Il cliente può scegliere</option>
-    </select>
-  </Field>
+      <Field
+        label="Come assegnare l’operatore"
+        hint="Scegli come Slotta assegna automaticamente un operatore quando il cliente non ne seleziona uno."
+      >
+        <select
+          value={settings.staff_assign_mode}
+          onChange={e => {
+            setSettings(s => ({
+              ...s,
+              staff_assign_mode: e.target.value as Settings['staff_assign_mode'],
+            }))
+            setSavedFlag(false)
+          }}
+          className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base outline-none transition focus:border-[#1FA7A6] focus:ring-2 focus:ring-[#1FA7A6]/10"
+        >
+          <option value="first_free">Primo operatore libero</option>
+          <option value="round_robin">Distribuisci tra gli operatori</option>
+        </select>
+      </Field>
 
-  <Field
-    label="Come assegnare l’operatore"
-    hint="Scegli come Slotta assegna automaticamente un operatore quando il cliente non ne seleziona uno."
-  >
-    <select
-      value={settings.staff_assign_mode}
-      onChange={e => {
-        setSettings(s => ({
-          ...s,
-          staff_assign_mode: e.target.value as Settings['staff_assign_mode'],
-        }))
-        setSavedFlag(false)
-      }}
-      className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#1FA7A6] focus:ring-2 focus:ring-[#1FA7A6]/10"
-    >
-      <option value="first_free">Primo operatore libero</option>
-      <option value="round_robin">Distribuisci tra gli operatori</option>
-    </select>
-  </Field>
+      <Field
+        label="Scelta operatore dal cliente"
+        hint="Puoi mostrare la scelta dell’operatore nella pagina cliente oppure nasconderla."
+      >
+        <select
+          value={settings.staff_selection_mode}
+          onChange={e => {
+            setSettings(s => ({
+              ...s,
+              staff_selection_mode: e.target.value as Settings['staff_selection_mode'],
+            }))
+            setSavedFlag(false)
+          }}
+          className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base outline-none transition focus:border-[#1FA7A6] focus:ring-2 focus:ring-[#1FA7A6]/10"
+        >
+          <option value="auto_only">Nascondi scelta operatore</option>
+          <option value="client_choice">Il cliente può scegliere</option>
+        </select>
+      </Field>
+    </div>
+  </Card>
 
-  <Field
-    label="Scelta operatore dal cliente"
-    hint="Puoi mostrare la scelta dell’operatore nella pagina cliente oppure nasconderla."
+  <Card
+    title="Pagamenti"
+    subtitle="Scegli come i clienti possono pagare le prenotazioni."
   >
-    <select
-      value={settings.staff_selection_mode}
-      onChange={e => {
-        setSettings(s => ({
-          ...s,
-          staff_selection_mode: e.target.value as Settings['staff_selection_mode'],
-        }))
-        setSavedFlag(false)
-      }}
-      className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#1FA7A6] focus:ring-2 focus:ring-[#1FA7A6]/10"
-    >
-      <option value="auto_only">Nascondi scelta operatore</option>
-      <option value="client_choice">Il cliente può scegliere</option>
-    </select>
-  </Field>
+    <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
+      <Field
+        label="Metodo di pagamento"
+        hint="Per iniziare, consigliato: pagamento in salone."
+      >
+        <select
+          value={settings.payment_mode_default}
+          onChange={e => {
+            setSettings(s => ({
+              ...s,
+              payment_mode_default: e.target.value as Settings['payment_mode_default'],
+            }))
+            setSavedFlag(false)
+          }}
+          className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base outline-none transition focus:border-[#1FA7A6] focus:ring-2 focus:ring-[#1FA7A6]/10"
+        >
+          <option value="in_person">Pagamento in salone</option>
+          <option value="online">Pagamento online</option>
+          <option value="client_choice">Il cliente può scegliere</option>
+        </select>
+      </Field>
+    </div>
+  </Card>
 </div>
-  </div>
-</Card>
      <Card
   title="Orari settimanali"
   subtitle="Imposta mattina, pomeriggio, mezze giornate e giorni di chiusura."

@@ -8,10 +8,12 @@ type Props = {
 
 export function Field({ label, hint, children }: Props) {
   return (
-    <div className="grid gap-1">
-      <div className="text-[11px] text-zinc-500">{label}</div>
+    <div className="grid min-w-0 gap-2">
+      <div className="text-sm font-bold text-[#0F1D2D]">{label}</div>
       {children}
-      {hint ? <div className="text-[11px] text-zinc-500">{hint}</div> : null}
+      {hint ? (
+        <div className="text-sm leading-5 text-slate-600">{hint}</div>
+      ) : null}
     </div>
   )
 }
