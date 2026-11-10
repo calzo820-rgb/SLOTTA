@@ -343,15 +343,15 @@ const settingsInvalid =
       {/* HEADER PAGINA */}
 <div className="flex flex-wrap items-start justify-between gap-4">
   <div>
-    <p className="hidden md:block text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
+    <p className="text-xs font-black uppercase tracking-wide text-[#1FA7A6] md:text-sm">
       Area gestore
     </p>
 
-    <h1 className="hidden md:block text-3xl font-black tracking-tight text-[#0F1D2D]">
+    <h1 className="mt-1 text-2xl font-black tracking-tight text-[#0F1D2D] md:text-3xl">
       Impostazioni
     </h1>
 
-    <p className="text-sm text-slate-600 md:mt-1">
+    <p className="mt-1 text-sm text-slate-600">
       Gestisci gli orari, le prenotazioni e le preferenze della tua attività.
     </p>
   </div>
