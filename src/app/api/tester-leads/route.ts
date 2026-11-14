@@ -2,19 +2,19 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { enforceDistributedRateLimit, readJsonBody } from '@/lib/apiGuard'
 import { sendTransactionalEmail } from '@/lib/transactionalEmail'
+import { testerContactMethodLabels, validateTesterLeadContact } from '@/lib/testerLeadContact'
 
 function cleanText(value: unknown, max = 500) {
   return String(value || '').trim().slice(0, max)
 }
 
-function isValidPhone(value: string) {
-  return value.replace(/\D/g, '').length >= 8
-}
 
 function leadMessage(lead: {
   salonName: string
   contactName: string
-  phone: string
+  phone: string | null
+  email: string | null
+  contactMethods: string[]
   city: string
   message: string
   source: string
@@ -24,7 +24,9 @@ function leadMessage(lead: {
     '',
     `Salone: ${lead.salonName}`,
     `Referente: ${lead.contactName}`,
-    `Telefono: ${lead.phone}`,
+    `Modalità di contatto: ${testerContactMethodLabels(lead.contactMethods).join(', ')}`,
+    lead.email ? `Email: ${lead.email}` : null,
+    lead.phone ? `Telefono: ${lead.phone}` : null,
     `Comune: ${lead.city}`,
     lead.message ? `Messaggio: ${lead.message}` : null,
     `Fonte: ${lead.source}`,
@@ -89,7 +91,11 @@ export async function POST(req: Request) {
 
     const salonName = cleanText(body.salonName, 120)
     const contactName = cleanText(body.contactName, 120)
-    const phone = cleanText(body.phone, 40)
+    const contact = validateTesterLeadContact(body.contactMethods, body.email, body.phone)
+    if (!contact.ok) {
+      return NextResponse.json({ error: contact.error }, { status: 400 })
+    }
+    const { phone, email, contactMethods } = contact
     const city = cleanText(body.city, 80)
     const municipalityCode = cleanText(body.municipalityCode, 6)
     const message = cleanText(body.message, 800)
@@ -108,13 +114,6 @@ export async function POST(req: Request) {
     if (contactName.length < 2) {
       return NextResponse.json(
         { error: 'Inserisci il tuo nome.' },
-        { status: 400 },
-      )
-    }
-
-    if (!isValidPhone(phone)) {
-      return NextResponse.json(
-        { error: 'Inserisci un numero WhatsApp valido.' },
         { status: 400 },
       )
     }
@@ -145,6 +144,8 @@ export async function POST(req: Request) {
         salon_name: salonName,
         contact_name: contactName,
         phone,
+        email,
+        contact_methods: contactMethods,
         city,
         message: message || null,
         source,
@@ -169,6 +170,8 @@ export async function POST(req: Request) {
       salonName,
       contactName,
       phone,
+      email,
+      contactMethods,
       city,
       message,
       source,
