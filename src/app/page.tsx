@@ -1,6 +1,11 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import InstallAppButton from '@/components/InstallAppButton'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 export default function HomePage() {
   return (
