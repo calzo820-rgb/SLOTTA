@@ -58,3 +58,25 @@ test('duplicate selections are normalized', () => {
     ok: true, contactMethods: ['sms'], email: null, phone: '3331234567',
   })
 })
+
+test('all non-empty channel combinations require exactly their applicable details', () => {
+  const available = ['email', 'whatsapp', 'sms', 'call']
+  for (let mask = 1; mask < 1 << available.length; mask += 1) {
+    const methods = available.filter((_, index) => mask & (1 << index))
+    const needsEmail = methods.includes('email')
+    const needsPhone = methods.some(method => method !== 'email')
+    const complete = validateTesterLeadContact(
+      methods,
+      needsEmail ? 'persona@example.it' : '',
+      needsPhone ? '3331234567' : '',
+    )
+    assert.equal(complete.ok, true, `expected ${methods.join(',')} to accept applicable details`)
+
+    if (needsEmail) {
+      assert.equal(validateTesterLeadContact(methods, '', needsPhone ? '3331234567' : '').ok, false)
+    }
+    if (needsPhone) {
+      assert.equal(validateTesterLeadContact(methods, needsEmail ? 'persona@example.it' : '', '').ok, false)
+    }
+  }
+})
