@@ -2,11 +2,14 @@
 
 import { FormEvent, useMemo, useState } from 'react'
 import MunicipalityPicker, { type MunicipalityOption } from '@/components/admin/MunicipalityPicker'
+import { TESTER_CONTACT_METHODS, validateTesterLeadContact } from '@/lib/testerLeadContact'
 
 type FormState = {
   salonName: string
   contactName: string
   phone: string
+  email: string
+  contactMethods: string[]
   city: string
   municipalityCode: string | null
   message: string
@@ -17,6 +20,8 @@ const initialForm: FormState = {
   salonName: '',
   contactName: '',
   phone: '',
+  email: '',
+  contactMethods: [],
   city: '',
   municipalityCode: null,
   message: '',
@@ -67,9 +72,9 @@ export default function TesterLeadClient() {
       return
     }
 
-    const digits = form.phone.replace(/\D/g, '')
-    if (digits.length < 8) {
-      setError('Inserisci un numero WhatsApp valido.')
+    const contact = validateTesterLeadContact(form.contactMethods, form.email, form.phone)
+    if (!contact.ok) {
+      setError(contact.error)
       return
     }
 
@@ -89,7 +94,9 @@ export default function TesterLeadClient() {
         body: JSON.stringify({
           salonName: form.salonName,
           contactName: form.contactName,
-          phone: form.phone,
+          phone: contact.phone,
+          email: contact.email,
+          contactMethods: contact.contactMethods,
           city: form.city,
           municipalityCode: form.municipalityCode,
           message: form.message,
@@ -186,7 +193,7 @@ export default function TesterLeadClient() {
             >
               Sì, voglio essere ricontattato
               <span className="mt-1 block text-xs font-bold text-[#0F1D2D]/70">
-                Compilo nome attività, referente, WhatsApp e comune.
+                Compilo i recapiti che preferisco e il comune.
               </span>
             </button>
 
@@ -324,23 +331,60 @@ export default function TesterLeadClient() {
             />
           </label>
 
-          <label className="grid gap-1.5">
-            <span className="text-sm font-black text-[#0F1D2D]">
-              Telefono / WhatsApp
-            </span>
-            <input
-              required
-              type="tel"
-              value={form.phone}
-              onChange={e =>
-                setForm(prev => ({ ...prev, phone: e.target.value }))
-              }
-              placeholder="Es. 333 123 4567"
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1FA7A6] focus:ring-4 focus:ring-[#1FA7A6]/10"
-              inputMode="tel"
-              autoComplete="tel"
-            />
-          </label>
+          <fieldset className="grid gap-2">
+            <legend className="text-sm font-black text-[#0F1D2D]">
+              Come preferisci essere ricontattato? <span aria-hidden="true">*</span>
+            </legend>
+            <div className="grid grid-cols-2 gap-2">
+              {TESTER_CONTACT_METHODS.map(method => (
+                <label key={method.value} className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-[#0F1D2D]">
+                  <input
+                    type="checkbox"
+                    checked={form.contactMethods.includes(method.value)}
+                    onChange={event => setForm(prev => ({
+                      ...prev,
+                      contactMethods: event.target.checked
+                        ? [...prev.contactMethods, method.value]
+                        : prev.contactMethods.filter(value => value !== method.value),
+                    }))}
+                    className="h-4 w-4 accent-[#1FA7A6]"
+                  />
+                  {method.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          {form.contactMethods.includes('email') ? (
+            <label className="grid gap-1.5">
+              <span className="text-sm font-black text-[#0F1D2D]">Indirizzo email *</span>
+              <input
+                required
+                type="email"
+                value={form.email}
+                onChange={e => setForm(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="nome@esempio.it"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1FA7A6] focus:ring-4 focus:ring-[#1FA7A6]/10"
+                autoComplete="email"
+              />
+            </label>
+          ) : null}
+
+          {form.contactMethods.some(method => method !== 'email') ? (
+            <label className="grid gap-1.5">
+              <span className="text-sm font-black text-[#0F1D2D]">Numero di telefono *</span>
+              <input
+                required
+                type="tel"
+                value={form.phone}
+                onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Es. 333 123 4567"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#1FA7A6] focus:ring-4 focus:ring-[#1FA7A6]/10"
+                inputMode="tel"
+                autoComplete="tel"
+              />
+            </label>
+          ) : null}
 
           <MunicipalityPicker
             value={form.city}
