@@ -10,11 +10,9 @@ export const metadata: Metadata = {
   description: 'Prenotazioni online semplici per attività e professionisti.',
   manifest: '/manifest.json',
   applicationName: 'Slotta',
-  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'it_IT',
-    url: '/',
     siteName: 'Slotta',
     title: 'Slotta | Prenotazioni smart',
     description: 'Prenotazioni online semplici per attività e professionisti.',

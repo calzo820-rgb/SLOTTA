@@ -1,4 +1,5 @@
 import ServiceBookingPageClient from '@/components/ServiceBookingPageClient'
+import type { Metadata } from 'next'
 import { supabaseServer } from '@/lib/supabaseServer'
 
 type Service = {
@@ -13,6 +14,31 @@ type Service = {
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const { data: tenant } = await supabaseServer()
+    .from('tenants')
+    .select('name')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  const canonical = `/t/${encodeURIComponent(slug)}`
+
+  return {
+    title: tenant?.name ? `${tenant.name} | Prenota online` : 'Prenota online',
+    description: tenant?.name
+      ? `Prenota online presso ${tenant.name} con Slotta.`
+      : 'Scegli un servizio e prenota online con Slotta.',
+    alternates: { canonical },
+    openGraph: { url: canonical },
+  }
+}
 
 export default async function TenantHome({
   params,

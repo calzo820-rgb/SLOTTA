@@ -5,7 +5,8 @@ import TesterLeadClient from './tester-lead-client'
 export const metadata = {
   title: 'Diventa tester | Slotta',
   description:
-    'Slotta cerca parrucchieri e barber shop tester in Monza e Brianza e dintorni.',
+    'Slotta cerca attività tester in Monza e Brianza e dintorni.',
+  alternates: { canonical: '/tester' },
 }
 
 export default function TesterPage() {
@@ -46,13 +47,11 @@ export default function TesterPage() {
 
           <div className="grid gap-4">
             <h1 className="text-4xl font-black leading-[1.05] tracking-tight text-[#0F1D2D] sm:text-5xl md:text-6xl">
-              Vuoi provare Slotta sul tuo salone?
+              Vuoi provare Slotta per il tuo salone?
             </h1>
 
             <p className="max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
-              Sto cercando pochi parrucchieri e barber shop tester in zona.
-              Non è una demo pubblica: ti configuro una versione reale di
-              Slotta con i tuoi servizi, i tuoi orari e il tuo link prenotazioni.
+              Sto cercando attività di zona che vogliano provare gratuitamente Slotta. Sei interessato? Compila il box affianco, ti ricontatterò senza impegno per costruire un profilo su misura per te!
             </p>
           </div>
 
