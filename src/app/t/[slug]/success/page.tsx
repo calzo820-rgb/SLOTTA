@@ -1,10 +1,15 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import {
   hashBookingConfirmationToken,
   isValidBookingConfirmationToken,
 } from '@/lib/bookingConfirmationToken'
 import { cleanPhoneForWhatsapp } from '@/components/service-booking/utils'
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
+
 type Props = {
   params: Promise<{ slug: string }>
   searchParams: Promise<{
