@@ -62,6 +62,7 @@ export default async function TenantHome({
   instagram_url,
   website_url,
   is_active,
+  stripe_connect_account_id,
   stripe_connect_charges_enabled,
   stripe_connect_payouts_enabled
 `)
@@ -121,6 +122,7 @@ export default async function TenantHome({
   whatsapp_phone: tenant.whatsapp_phone,
   instagram_url: tenant.instagram_url,
   website_url: tenant.website_url,
+  stripe_connect_connected: Boolean(tenant.stripe_connect_account_id),
   stripe_connect_charges_enabled: tenant.stripe_connect_charges_enabled,
   stripe_connect_payouts_enabled: tenant.stripe_connect_payouts_enabled,
 }}

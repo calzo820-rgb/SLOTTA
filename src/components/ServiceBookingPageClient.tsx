@@ -9,6 +9,7 @@ import {
   type Slot,
   timeStrToMinutes,
 } from '@/lib/bookingSlots'
+import { isStripeConnectReady } from '@/lib/stripeConnectPayments'
 import type {
   StaffMember,
   Props,
@@ -51,6 +52,7 @@ type TenantHoursForBooking = {
 type CheckoutData = {
   url?: string
   error?: string
+  error_code?: string
   hold_id?: string
   hold_cancel_token?: string
 }
@@ -104,15 +106,27 @@ const [paymentModeDefault, setPaymentModeDefault] =
   useState<PaymentModeDefault>('in_person')
 const [paymentModeChoice, setPaymentModeChoice] =
   useState<PaymentModeEffective>('in_person')
+const [paymentConfigLoaded, setPaymentConfigLoaded] = useState(false)
+const [onlinePaymentReactivationRequired, setOnlinePaymentReactivationRequired] =
+  useState(false)
+const [onlinePaymentTemporarilyUnavailable, setOnlinePaymentTemporarilyUnavailable] =
+  useState(false)
 
   const [staffSelectionMode, setStaffSelectionMode] =
     useState<StaffSelectionMode>('client_choice')
 
  const mainColor = '#1FA7A6'
 
+ const stripeConnectReady = isStripeConnectReady({
+  connected: tenant.stripe_connect_connected === true,
+  chargesEnabled: tenant.stripe_connect_charges_enabled === true,
+  payoutsEnabled: tenant.stripe_connect_payouts_enabled === true,
+ })
  const onlinePaymentsAvailable =
-  tenant.stripe_connect_charges_enabled === true &&
-  tenant.stripe_connect_payouts_enabled === true
+  stripeConnectReady &&
+  paymentConfigLoaded &&
+  !onlinePaymentReactivationRequired &&
+  !onlinePaymentTemporarilyUnavailable
 
   const mapsUrl = tenant.address
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -262,6 +276,7 @@ setErrorSlots(null)
               slot_minutes?: number | null
               service_staff_count?: number | null
               payment_mode_default?: PaymentModeDefault | null
+              online_payments_reactivation_required?: boolean | null
               staff_selection_mode?: StaffSelectionMode | null
                lead_minutes?: number | null
             }
@@ -282,6 +297,13 @@ setErrorSlots(null)
 
 const rawPaymentMode: PaymentModeDefault =
   row?.payment_mode_default || 'in_person'
+
+if (!cancelled) {
+  setOnlinePaymentReactivationRequired(
+    row?.online_payments_reactivation_required === true,
+  )
+  setPaymentConfigLoaded(true)
+}
 
 const pmode: PaymentModeDefault = onlinePaymentsAvailable
   ? rawPaymentMode
@@ -630,6 +652,26 @@ async function submitBooking() {
       if (!checkoutRes.ok || !checkoutData?.url) {
   const msg =
     checkoutData?.error || 'Errore durante la creazione del pagamento.'
+
+  if (
+    checkoutData?.error_code === 'ONLINE_PAYMENTS_SUSPENDED' ||
+    checkoutData?.error_code === 'STRIPE_STATUS_UNAVAILABLE' ||
+    checkoutData?.error_code === 'STRIPE_CHECKOUT_UNAVAILABLE' ||
+    checkoutData?.error_code === 'STRIPE_NOT_CONNECTED'
+  ) {
+    setOnlinePaymentReactivationRequired(
+      checkoutData.error_code === 'ONLINE_PAYMENTS_SUSPENDED',
+    )
+    setOnlinePaymentTemporarilyUnavailable(
+      checkoutData.error_code !== 'ONLINE_PAYMENTS_SUSPENDED',
+    )
+    setPaymentConfigLoaded(true)
+    setPaymentModeDefault('in_person')
+    setPaymentModeChoice('in_person')
+    alert(`${msg}\n\nLa prenotazione non è ancora stata inviata. Controlla il pagamento in salone e conferma di nuovo.`)
+    setSubmitting(false)
+    return
+  }
 
   if (
     checkoutRes.status === 409 ||

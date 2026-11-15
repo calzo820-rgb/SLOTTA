@@ -44,7 +44,7 @@ async function handlePost(req: Request) {
         db
           .from('tenant_settings')
           .select(
-            'slot_minutes, service_staff_count, payment_mode_default, staff_selection_mode, lead_minutes',
+            'slot_minutes, service_staff_count, payment_mode_default, staff_selection_mode, lead_minutes, online_payments_reactivation_required',
           )
           .eq('tenant_id', tenantId)
           .maybeSingle(),

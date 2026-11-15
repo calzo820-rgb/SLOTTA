@@ -24,6 +24,7 @@ import {
   hashBookingConfirmationToken,
 } from '@/lib/bookingConfirmationToken'
 import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
+import { isStripeConnectReady } from '@/lib/stripeConnectPayments'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -119,7 +120,8 @@ async function handlePost(req: Request) {
     }
 
         // Controllo Stripe Connect del salone
-    const { data: tenant, error: tenantErr } = await getSupabaseAdmin()
+    const db = getSupabaseAdmin()
+    const { data: tenant, error: tenantErr } = await db
       .from('tenants')
       .select(
         `
@@ -143,18 +145,85 @@ async function handlePost(req: Request) {
     }
 
     const stripeAccountId = tenant.stripe_connect_account_id as string | null
-
-    if (
-      !stripeAccountId ||
-      !tenant.stripe_connect_charges_enabled ||
-      !tenant.stripe_connect_payouts_enabled
-    ) {
+    if (!stripeAccountId) {
       return NextResponse.json(
         {
-          error:
-            'I pagamenti online non sono ancora attivi per questa attività. Scegli il pagamento in salone oppure contatta il salone.',
+          error: 'I pagamenti online non sono configurati. Puoi scegliere il pagamento in salone.',
+          error_code: 'STRIPE_NOT_CONNECTED',
         },
-        { status: 400 },
+        { status: 409 },
+      )
+    }
+
+    const { data: tenantSettings, error: settingsError } = await db
+      .from('tenant_settings')
+      .select('payment_mode_default, online_payments_reactivation_required')
+      .eq('tenant_id', tenant_id)
+      .maybeSingle()
+
+    if (settingsError) throw settingsError
+
+    if (!['online', 'client_choice'].includes(tenantSettings?.payment_mode_default || '')) {
+      return NextResponse.json(
+        {
+          error: 'Questa attività non ha attivato il pagamento online. Scegli il pagamento in salone.',
+          error_code: 'ONLINE_PAYMENTS_NOT_SELECTED',
+        },
+        { status: 409 },
+      )
+    }
+
+    if (tenantSettings?.online_payments_reactivation_required === true) {
+      return NextResponse.json(
+        {
+          error: 'I pagamenti online sono in attesa della conferma del titolare. Puoi scegliere il pagamento in salone.',
+          error_code: 'ONLINE_PAYMENTS_SUSPENDED',
+        },
+        { status: 409 },
+      )
+    }
+
+    const stripeObservedAt = new Date().toISOString()
+    let stripeAccount: Stripe.Account
+    try {
+      stripeAccount = await stripe.accounts.retrieve(stripeAccountId)
+    } catch {
+      return NextResponse.json(
+        {
+          error: 'Verifica Stripe temporaneamente non disponibile. Puoi scegliere il pagamento in salone e riprovare più tardi.',
+          error_code: 'STRIPE_STATUS_UNAVAILABLE',
+        },
+        { status: 503 },
+      )
+    }
+
+    const stripeReady = isStripeConnectReady({
+      connected: true,
+      chargesEnabled: stripeAccount.charges_enabled ?? false,
+      payoutsEnabled: stripeAccount.payouts_enabled ?? false,
+    })
+    const { data: syncedStripeReady, error: syncStatusError } = await db.rpc(
+      'sync_stripe_connect_account_status',
+      {
+        p_stripe_account_id: stripeAccount.id,
+        p_details_submitted: stripeAccount.details_submitted ?? false,
+        p_charges_enabled: stripeAccount.charges_enabled ?? false,
+        p_payouts_enabled: stripeAccount.payouts_enabled ?? false,
+        p_disabled_reason: stripeAccount.requirements?.disabled_reason ?? null,
+        p_requirements: stripeAccount.requirements ?? null,
+        p_observed_at: stripeObservedAt,
+      },
+    )
+
+    if (syncStatusError) throw syncStatusError
+
+    if (!stripeReady || syncedStripeReady !== true) {
+      return NextResponse.json(
+        {
+          error: 'Stripe non è abilitato a ricevere pagamenti. Scegli il pagamento in salone.',
+          error_code: 'ONLINE_PAYMENTS_SUSPENDED',
+        },
+        { status: 409 },
       )
     }
 
@@ -383,8 +452,10 @@ try {
 
     // 10. Stripe Checkout
     // La sessione viene creata sull'account Stripe collegato del salone.
-    const session = await stripe.checkout.sessions.create(
-      {
+    let session: Stripe.Response<Stripe.Checkout.Session>
+    try {
+      session = await stripe.checkout.sessions.create(
+        {
         mode: 'payment',
         success_url: safeSuccessUrl.toString(),
         cancel_url: safeCancelUrl.toString(),
@@ -412,11 +483,73 @@ try {
             },
           },
         ],
-      },
-      {
-        stripeAccount: stripeAccountId,
-      },
-    )
+        },
+        {
+          stripeAccount: stripeAccountId,
+          idempotencyKey: `slotta-checkout-hold-${hold.id}`,
+        },
+      )
+    } catch {
+      // A checkout failure is not by itself proof that Connect was disabled.
+      // Re-read the account and persist a suspension only after a valid false status.
+      try {
+        const recoveryObservedAt = new Date().toISOString()
+        const currentAccount = await stripe.accounts.retrieve(stripeAccountId)
+        const currentReady = isStripeConnectReady({
+          connected: true,
+          chargesEnabled: currentAccount.charges_enabled ?? false,
+          payoutsEnabled: currentAccount.payouts_enabled ?? false,
+        })
+
+        const { error: statusSyncError } = await db.rpc(
+          'sync_stripe_connect_account_status',
+          {
+            p_stripe_account_id: currentAccount.id,
+            p_details_submitted: currentAccount.details_submitted ?? false,
+            p_charges_enabled: currentAccount.charges_enabled ?? false,
+            p_payouts_enabled: currentAccount.payouts_enabled ?? false,
+            p_disabled_reason: currentAccount.requirements?.disabled_reason ?? null,
+            p_requirements: currentAccount.requirements ?? null,
+            p_observed_at: recoveryObservedAt,
+          },
+        )
+        if (statusSyncError) throw statusSyncError
+
+        await db
+          .from('service_booking_holds')
+          .update({ status: 'cancelled' })
+          .eq('id', hold.id)
+          .eq('tenant_id', tenant_id)
+          .eq('status', 'pending')
+
+        return NextResponse.json(
+          {
+            error: currentReady
+              ? 'Stripe non è riuscito ad avviare il checkout. Puoi scegliere il pagamento in salone e riprovare più tardi.'
+              : 'Stripe non è più abilitato a ricevere pagamenti. Scegli il pagamento in salone.',
+            error_code: currentReady
+              ? 'STRIPE_CHECKOUT_UNAVAILABLE'
+              : 'ONLINE_PAYMENTS_SUSPENDED',
+          },
+          { status: currentReady ? 503 : 409 },
+        )
+      } catch {
+        await db
+          .from('service_booking_holds')
+          .update({ status: 'cancelled' })
+          .eq('id', hold.id)
+          .eq('tenant_id', tenant_id)
+          .eq('status', 'pending')
+
+        return NextResponse.json(
+          {
+            error: 'Stripe non è raggiungibile in questo momento. Puoi scegliere il pagamento in salone e riprovare più tardi.',
+            error_code: 'STRIPE_STATUS_UNAVAILABLE',
+          },
+          { status: 503 },
+        )
+      }
+    }
 
     const { error: updateHoldErr } = await getSupabaseAdmin()
       .from('service_booking_holds')
@@ -426,7 +559,11 @@ try {
       .eq('id', hold.id)
       .eq('tenant_id', tenant_id)
 
-    if (updateHoldErr) throw updateHoldErr
+    if (updateHoldErr) {
+      // Checkout already exists. Keep the hold alive so a successful payment
+      // webhook can finalize it; cancelling here could strand an in-flight payment.
+      logApiEvent('service_checkout_session_reference_save_failed', 'error')
+    }
 
     return NextResponse.json({
       url: session.url,

@@ -10,6 +10,7 @@ export type TenantInfo = {
   instagram_url?: string | null
   website_url?: string | null
 
+  stripe_connect_connected?: boolean | null
   stripe_connect_charges_enabled?: boolean | null
   stripe_connect_payouts_enabled?: boolean | null
 }
