@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import type { HoursRow, Settings, MobileSections } from './types'
@@ -29,7 +30,13 @@ type LegacyTenantHoursRow = {
   close_time?: string | null
   is_closed?: boolean | null
 }
-export default function HoursClient({ tenantId }: { tenantId: string }) {
+export default function HoursClient({
+  tenantId,
+  showSetupGuide = false,
+}: {
+  tenantId: string
+  showSetupGuide?: boolean
+}) {
   const [rows, setRows] = useState<HoursRow[]>([])
   const [settings, setSettings] = useState<Settings>({
   slot_minutes: '30',
@@ -379,6 +386,25 @@ const settingsInvalid =
           </button>
         </div>
       </div>
+
+      {showSetupGuide && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-[#CFE7E7] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-black text-[#0F1D2D]">
+              Guida configurazione iniziale
+            </p>
+            <p className="mt-1 text-sm leading-5 text-slate-600">
+              Rivedi i passaggi e controlla se la pagina pubblica ha orari prenotabili.
+            </p>
+          </div>
+          <Link
+            href="/admin/service-bookings?setup=1"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[#FFC145] px-4 py-2 text-sm font-black text-[#0F1D2D] hover:brightness-95"
+          >
+            Apri la guida
+          </Link>
+        </div>
+      )}
 
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">

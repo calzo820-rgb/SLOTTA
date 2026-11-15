@@ -28,6 +28,7 @@ import { BookingsListHeader } from './components/BookingsListHeader'
 import { BookingMobileCards } from './components/BookingMobileCards'
 import { BookingsTable } from './components/BookingsTable'
 import { BookingsPageHeader } from './components/BookingsPageHeader'
+import SetupChecklist from './components/SetupChecklist'
 
 async function updateAppBadge(count: number) {
   try {
@@ -63,7 +64,13 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray
 }
 
-export default function ServiceBookingsClient({ tenantId }: { tenantId: string }) {
+export default function ServiceBookingsClient({
+  tenantId,
+  showSetupChecklist = false,
+}: {
+  tenantId: string
+  showSetupChecklist?: boolean
+}) {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [newPaidBookingIds, setNewPaidBookingIds] = useState<string[]>([])
   const autoAcknowledgedBookingIdsRef = useRef(new Set<string>())
@@ -902,6 +909,7 @@ async function deleteSelectedBookings() {
   return (
   <main className="min-h-screen bg-[#F2F4F7] px-4 py-5 text-[#0F1D2D] sm:px-6">
     <div className="mx-auto grid max-w-7xl gap-5">
+      {showSetupChecklist && <SetupChecklist tenantId={tenantId} />}
       {/* HEADER PAGINA */}
       <BookingsPageHeader
   soundEnabled={soundEnabled}

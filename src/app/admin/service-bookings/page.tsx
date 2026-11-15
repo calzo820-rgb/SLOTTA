@@ -11,5 +11,10 @@ export default async function Page() {
 
   requirePageAccess(mem, 'bookings')
 
-  return <ServiceBookingsClient tenantId={mem.tenant_id} />
+  return (
+    <ServiceBookingsClient
+      tenantId={mem.tenant_id}
+      showSetupChecklist={mem.role === 'owner'}
+    />
+  )
 }

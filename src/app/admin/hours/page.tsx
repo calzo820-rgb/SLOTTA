@@ -11,5 +11,10 @@ export default async function Page() {
 
   requirePageAccess(mem, 'hours')
 
-  return <HoursClient tenantId={mem.tenant_id} />
+  return (
+    <HoursClient
+      tenantId={mem.tenant_id}
+      showSetupGuide={mem.role === 'owner'}
+    />
+  )
 }
