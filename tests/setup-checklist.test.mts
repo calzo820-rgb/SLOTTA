@@ -14,6 +14,10 @@ const bookingsPage = readFileSync(
   new URL('../src/app/admin/service-bookings/page.tsx', import.meta.url),
   'utf8',
 )
+const hoursPage = readFileSync(
+  new URL('../src/app/admin/hours/page.tsx', import.meta.url),
+  'utf8',
+)
 
 const tenantHours = {
   dow: 2,
@@ -139,4 +143,5 @@ test('limits setup progress data and dashboard checklist to the owner', () => {
   assert.match(progressRoute, /membership\.role !== 'owner'/)
   assert.match(progressRoute, /\.eq\('id', tenantId\)/)
   assert.match(bookingsPage, /showSetupChecklist=\{mem\.role === 'owner'\}/)
+  assert.match(hoursPage, /showSetupGuide=\{mem\.role === 'owner'\}/)
 })
