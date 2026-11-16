@@ -28,6 +28,7 @@ import { BookingsListHeader } from './components/BookingsListHeader'
 import { BookingMobileCards } from './components/BookingMobileCards'
 import { BookingsTable } from './components/BookingsTable'
 import { BookingsPageHeader } from './components/BookingsPageHeader'
+import Link from 'next/link'
 
 async function updateAppBadge(count: number) {
   try {
@@ -64,6 +65,10 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function ServiceBookingsClient({ tenantId }: { tenantId: string }) {
+  const [paymentNotice, setPaymentNotice] = useState<{
+    stripeReady: boolean
+    reactivationRequired: boolean
+  } | null>(null)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [newPaidBookingIds, setNewPaidBookingIds] = useState<string[]>([])
   const autoAcknowledgedBookingIdsRef = useRef(new Set<string>())
@@ -98,6 +103,34 @@ const [newCustomerEmail, setNewCustomerEmail] = useState('')
 const [newBookingNote, setNewBookingNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/stripe-connect/payment-state', { cache: 'no-store' })
+      .then(async response => {
+        if (!response.ok) return null
+        return response.json()
+      })
+      .then(payload => {
+        if (cancelled || !payload) return
+        if (
+          payload.payment_mode_default === 'in_person' ||
+          (payload.stripe_ready && !payload.reactivation_required)
+        ) {
+          setPaymentNotice(null)
+          return
+        }
+        setPaymentNotice({
+          stripeReady: payload.stripe_ready === true,
+          reactivationRequired: payload.reactivation_required === true,
+        })
+      })
+      .catch(() => null)
+
+    return () => {
+      cancelled = true
+    }
+  }, [tenantId])
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
@@ -921,6 +954,24 @@ async function deleteSelectedBookings() {
     setNewBookingOpen(true)
   }}
 />
+
+      {paymentNotice ? (
+        <aside className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-semibold leading-6 text-amber-950">
+            {paymentNotice.reactivationRequired && paymentNotice.stripeReady
+              ? 'Stripe è di nuovo operativo. I pagamenti online restano sospesi finché il titolare non li riattiva.'
+              : paymentNotice.reactivationRequired
+                ? 'I pagamenti online sono sospesi. Le nuove prenotazioni possono essere effettuate con pagamento in salone.'
+                : 'Stripe Connect non è pronto. Le nuove prenotazioni possono essere effettuate con pagamento in salone.'}
+          </p>
+          <Link
+            href="/admin/hours#payments"
+            className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-black text-[#0F1D2D] transition hover:border-[#1FA7A6] hover:text-[#1FA7A6]"
+          >
+            Vai ai pagamenti
+          </Link>
+        </aside>
+      ) : null}
 
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">

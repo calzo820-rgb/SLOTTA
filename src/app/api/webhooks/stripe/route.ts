@@ -412,6 +412,7 @@ async function handlePost(req: Request) {
           p_payouts_enabled: account.payouts_enabled ?? false,
           p_disabled_reason: account.requirements?.disabled_reason ?? null,
           p_requirements: account.requirements ?? null,
+          p_observed_at: new Date(event.created * 1000).toISOString(),
         },
       )
 

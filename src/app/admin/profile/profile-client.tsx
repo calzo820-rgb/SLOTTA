@@ -19,15 +19,6 @@ type TenantProfile = {
   instagram_url: string | null
   website_url: string | null
 }
-type StripeConnectStatus = {
-  connected: boolean
-  account_id?: string
-  details_submitted: boolean
-  charges_enabled: boolean
-  payouts_enabled: boolean
-  disabled_reason: string | null
-  requirements: unknown
-}
 type DeletionRequest = {
   id: string
   status: 'scheduled'
@@ -99,17 +90,12 @@ export default function ProfileClient({ tenantId }: { tenantId: string }) {
   const [deletionSubmitting, setDeletionSubmitting] = useState(false)
   const [deletionConfirmation, setDeletionConfirmation] = useState('')
   const [exportAcknowledged, setExportAcknowledged] = useState(false)
-  const [connectLoading, setConnectLoading] = useState(false)
-const [connectError, setConnectError] = useState<string | null>(null)
-const [connectStatus, setConnectStatus] = useState<StripeConnectStatus | null>(null)
-const [connectStatusLoading, setConnectStatusLoading] = useState(false)
 const [sections, setSections] = useState({
   details: true,
   identity: false,
   links: false,
   staff: false,
   data: false,
-  payments: false,
 })
 
 function toggleSection(section: keyof typeof sections) {
@@ -121,7 +107,6 @@ function toggleSection(section: keyof typeof sections) {
       links: false,
       staff: false,
       data: false,
-      payments: false,
       [section]: !prev[section],
     }
   })
@@ -164,10 +149,6 @@ function toggleSection(section: keyof typeof sections) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId])
 useEffect(() => {
-  loadStripeConnectStatus()
-   
-}, [tenantId])
-useEffect(() => {
   loadDeletionRequest()
 }, [tenantId])
 
@@ -208,70 +189,6 @@ function downloadQrCode() {
     setError('Impossibile scaricare il QR code.')
   }
 }
-async function loadStripeConnectStatus() {
-  try {
-    setConnectStatusLoading(true)
-    setConnectError(null)
-
-    const res = await fetch('/api/stripe-connect/status', {
-      method: 'GET',
-    })
-
-    const json = await res.json().catch(() => null)
-
-    if (!res.ok) {
-      throw new Error(
-        json?.error || 'Errore durante il controllo dello stato Stripe Connect.',
-      )
-    }
-
-    setConnectStatus(json)
-} catch (e: unknown) {
-  const message =
-    e instanceof Error
-      ? e.message
-      : 'Errore durante il controllo dello stato Stripe Connect.'
-
-  setConnectError(message)
-} finally {
-    setConnectStatusLoading(false)
-  }
-}
-
-async function startStripeConnectOnboarding() {
-  try {
-    setConnectLoading(true)
-    setConnectError(null)
-
-    const res = await fetch('/api/stripe-connect/onboarding', {
-      method: 'POST',
-    })
-
-    const json = await res.json().catch(() => null)
-
-    if (!res.ok) {
-      throw new Error(
-        json?.error || 'Errore durante l’attivazione dei pagamenti online.',
-      )
-    }
-
-    if (!json?.url) {
-      throw new Error('Link Stripe non ricevuto.')
-    }
-
-    window.location.href = json.url
- } catch (e: unknown) {
-  const message =
-    e instanceof Error
-      ? e.message
-      : 'Errore durante l’attivazione dei pagamenti online.'
-
-  setConnectError(message)
-} finally {
-    setConnectLoading(false)
-  }
-}
-
 async function loadDeletionRequest() {
   try {
     setDeletionLoading(true)
@@ -757,101 +674,6 @@ async function cancelAccountDeletion() {
                 </div>
                 </div>
               </section>
-                           <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => toggleSection('payments')}
-                  aria-expanded={sections.payments}
-                  aria-controls="profile-payments"
-                  className="flex w-full items-center justify-between border-b border-[#D7EEF0] bg-gradient-to-r from-[#F3FBFB] to-[#F8FAFC] px-5 py-4 text-left transition hover:bg-[#EAF7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1FA7A6]"
-                >
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-wide text-[#1FA7A6]">
-                      Pagamenti online
-                    </p>
-                    <h2 className="mt-1 text-xl font-black text-[#0F1D2D]">
-                      Stripe Connect
-                    </h2>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">
-                      {connectStatusLoading ? 'Controllo stato…' : connectError ? 'Stato da verificare' : connectStatus?.charges_enabled && connectStatus?.payouts_enabled ? 'Attivi' : connectStatus?.connected ? 'Da completare' : 'Da configurare'}
-                    </p>
-                  </div>
-                  <span aria-hidden="true" className="text-sm font-black text-slate-400">{sections.payments ? '▲' : '▼'}</span>
-                </button>
-                <div id="profile-payments" className={sections.payments ? 'grid gap-4 p-5' : 'hidden'}>
-                  {connectStatusLoading ? (
-                    <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500">
-                      Controllo stato pagamenti...
-                    </p>
-                  ) : connectStatus?.charges_enabled && connectStatus?.payouts_enabled ? (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                      <p className="text-sm font-black text-emerald-800">
-                        Pagamenti online attivi
-                      </p>
-                      <p className="mt-1 text-xs font-semibold leading-5 text-emerald-700">
-                        Il conto del salone è collegato correttamente. I clienti potranno
-                        pagare online quando questa modalità sarà abilitata.
-                      </p>
-                    </div>
-                  ) : connectStatus?.connected ? (
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                      <p className="text-sm font-black text-amber-800">
-                        Configurazione Stripe da completare
-                      </p>
-                      <p className="mt-1 text-xs font-semibold leading-5 text-amber-700">
-                        Il conto è stato creato, ma Stripe richiede ancora alcune
-                        informazioni prima di abilitare pagamenti e bonifici.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                      <p className="text-sm font-black text-slate-800">
-                        Pagamenti online non attivi
-                      </p>
-                      <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-                        Collega il conto del salone per ricevere pagamenti online dai clienti.
-                        La procedura è guidata e sicura.
-                      </p>
-                    </div>
-                  )}
-
-                  <p className="rounded-2xl bg-slate-50 px-4 py-3 text-xs font-semibold leading-5 text-slate-500">
-                    Il pagamento in salone rimane sempre disponibile. I pagamenti online
-                    saranno disponibili solo quando Stripe Connect risulta attivo.
-                  </p>
-
-                  {connectError ? (
-                    <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-                      {connectError}
-                    </p>
-                  ) : null}
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={startStripeConnectOnboarding}
-                      disabled={connectLoading}
-                      className="min-h-[48px] w-full rounded-2xl bg-[#0F1D2D] px-4 py-3 text-sm font-black text-white transition hover:bg-[#1FA7A6] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {connectLoading
-                        ? 'Apertura Stripe…'
-                        : connectStatus?.connected
-                          ? 'Gestisci configurazione Stripe'
-                          : 'Attiva pagamenti online'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={loadStripeConnectStatus}
-                      disabled={connectStatusLoading}
-                      className="min-h-[48px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-[#0F1D2D] transition hover:border-[#1FA7A6] hover:text-[#1FA7A6] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {connectStatusLoading ? 'Aggiornamento…' : 'Aggiorna stato'}
-                    </button>
-                  </div>
-                </div>
-              </section>
-
               <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
 
                 <button

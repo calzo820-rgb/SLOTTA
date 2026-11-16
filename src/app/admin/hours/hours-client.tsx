@@ -21,6 +21,19 @@ type TenantSettingsRow = {
   payment_mode_default?: Settings['payment_mode_default'] | null
   staff_assign_mode?: Settings['staff_assign_mode'] | null
   staff_selection_mode?: Settings['staff_selection_mode'] | null
+  online_payments_reactivation_required?: boolean | null
+}
+
+type StripeConnectStatus = {
+  connected: boolean
+  stripe_ready: boolean | null
+  reactivation_required: boolean
+  details_submitted: boolean
+  charges_enabled: boolean
+  payouts_enabled: boolean
+  temporarily_unavailable?: boolean
+  error?: string
+  error_code?: string
 }
 
 type LegacyTenantHoursRow = {
@@ -29,7 +42,13 @@ type LegacyTenantHoursRow = {
   close_time?: string | null
   is_closed?: boolean | null
 }
-export default function HoursClient({ tenantId }: { tenantId: string }) {
+export default function HoursClient({
+  tenantId,
+  isOwner,
+}: {
+  tenantId: string
+  isOwner: boolean
+}) {
   const [rows, setRows] = useState<HoursRow[]>([])
   const [settings, setSettings] = useState<Settings>({
   slot_minutes: '30',
@@ -57,6 +76,115 @@ function toggleMobileSection(section: keyof typeof mobileSections) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedFlag, setSavedFlag] = useState(false)
+  const [stripeStatus, setStripeStatus] = useState<StripeConnectStatus | null>(null)
+  const [stripeStatusLoading, setStripeStatusLoading] = useState(true)
+  const [stripeWorking, setStripeWorking] = useState(false)
+  const [stripeError, setStripeError] = useState<string | null>(null)
+  const [paymentModeExplicitlySelected, setPaymentModeExplicitlySelected] =
+    useState(false)
+
+  const stripeReady =
+    stripeStatus?.stripe_ready === true && stripeStatus.connected === true
+  const stripeCheckUnavailable =
+    stripeStatusLoading || stripeStatus?.temporarily_unavailable === true
+
+  async function loadStripeStatus() {
+    setStripeStatusLoading(true)
+    setStripeError(null)
+
+    try {
+      const response = await fetch('/api/stripe-connect/status', {
+        cache: 'no-store',
+      })
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        if (response.status === 503) {
+          setStripeStatus({
+            connected: payload?.connected === true,
+            stripe_ready: null,
+            reactivation_required: payload?.reactivation_required === true,
+            details_submitted: false,
+            charges_enabled: false,
+            payouts_enabled: false,
+            temporarily_unavailable: true,
+            error: payload?.error || 'Verifica temporaneamente non disponibile.',
+          })
+          return
+        }
+        throw new Error(payload?.error || 'Impossibile verificare Stripe Connect.')
+      }
+
+      setStripeStatus(payload as StripeConnectStatus)
+    } catch (error: unknown) {
+      const message = error instanceof Error
+        ? error.message
+        : 'Impossibile verificare Stripe Connect.'
+      setStripeError(message)
+      setStripeStatus({
+        connected: false,
+        stripe_ready: null,
+        reactivation_required: false,
+        details_submitted: false,
+        charges_enabled: false,
+        payouts_enabled: false,
+        temporarily_unavailable: true,
+        error: message,
+      })
+    } finally {
+      setStripeStatusLoading(false)
+    }
+  }
+
+  async function startStripeConnectOnboarding() {
+    setStripeWorking(true)
+    setStripeError(null)
+    try {
+      const response = await fetch('/api/stripe-connect/onboarding', { method: 'POST' })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || 'Impossibile aprire la procedura Stripe.')
+      }
+      window.location.href = payload.url
+    } catch (error: unknown) {
+      setStripeError(error instanceof Error ? error.message : 'Impossibile aprire Stripe.')
+    } finally {
+      setStripeWorking(false)
+    }
+  }
+
+  async function reactivateOnlinePayments(
+    paymentMode?: Settings['payment_mode_default'],
+  ): Promise<boolean> {
+    setStripeWorking(true)
+    setStripeError(null)
+    try {
+      const response = await fetch('/api/stripe-connect/reactivate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentMode ? { payment_mode: paymentMode } : {}),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Impossibile riattivare i pagamenti online.')
+      }
+      setPaymentModeExplicitlySelected(false)
+      await loadStripeStatus()
+      return true
+    } catch (error: unknown) {
+      await loadStripeStatus()
+      setStripeError(error instanceof Error
+        ? error.message
+        : 'Impossibile riattivare i pagamenti online.')
+      return false
+    } finally {
+      setStripeWorking(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadStripeStatus()
+  }, [tenantId])
 
   function defaultRow(dow: number): HoursRow {
     return {
@@ -263,6 +391,22 @@ hh.forEach(r => map.set(r.dow, r))
   setSaving(true)
   setError(null)
 
+  const confirmingOnlineMode =
+    paymentModeExplicitlySelected &&
+    settings.payment_mode_default !== 'in_person' &&
+    stripeStatus?.reactivation_required === true
+
+  if (confirmingOnlineMode && !isOwner) {
+    setSaving(false)
+    setError('Solo il titolare può confermare la riattivazione dei pagamenti online.')
+    return
+  }
+  if (confirmingOnlineMode && !stripeReady) {
+    setSaving(false)
+    setError('Stripe deve essere nuovamente operativo prima della conferma.')
+    return
+  }
+
   try {
       const { error: stErr } = await supabase.from('tenant_settings').upsert(
         {
@@ -272,7 +416,9 @@ lead_minutes: leadTimeValue,
 customer_cancellation_notice_hours: cancellationNoticeValue,
 timezone: settings.timezone,
 service_staff_count: staffCountValue,
-          payment_mode_default: settings.payment_mode_default,
+          ...(!confirmingOnlineMode
+            ? { payment_mode_default: settings.payment_mode_default }
+            : {}),
           staff_assign_mode: settings.staff_assign_mode,
           staff_selection_mode: settings.staff_selection_mode,
         },
@@ -305,7 +451,15 @@ service_staff_count: staffCountValue,
 
       if (hErr) throw hErr
 
+      if (confirmingOnlineMode) {
+        const reactivated = await reactivateOnlinePayments(settings.payment_mode_default)
+        if (!reactivated) {
+          throw new Error('Impossibile confermare la modalità di pagamento online.')
+        }
+      }
+
       setSavedFlag(true)
+      setPaymentModeExplicitlySelected(false)
    } catch (e: unknown) {
       console.error('saveAll error raw:', e)
       setError(errToString(e) || 'Errore nel salvataggio.')
@@ -318,6 +472,23 @@ service_staff_count: staffCountValue,
     const m = new Map(rows.map(r => [r.dow, r]))
     return DOW_ORDER.map(d => m.get(d) || defaultRow(d))
   }, [rows])
+
+  const stripeStatusLabel = stripeStatusLoading
+    ? 'Controllo stato Stripe…'
+    : stripeStatus?.temporarily_unavailable
+      ? 'Verifica temporaneamente non disponibile'
+      : stripeStatus?.reactivation_required &&
+          settings.payment_mode_default !== 'in_person' &&
+          stripeReady
+        ? 'Stripe nuovamente operativo, in attesa di conferma'
+        : stripeStatus?.reactivation_required &&
+            settings.payment_mode_default !== 'in_person'
+          ? 'Pagamenti online sospesi'
+          : stripeReady
+            ? 'Pronto a ricevere pagamenti'
+            : stripeStatus?.connected
+              ? 'Configurazione da completare'
+              : 'Non collegato'
 const slotMinutesValue = Number(settings.slot_minutes)
 const leadTimeValue = Number(settings.lead_minutes)
 const cancellationNoticeValue = Number(settings.customer_cancellation_notice_hours)
@@ -550,33 +721,128 @@ const settingsInvalid =
     </div>
   </Card>
 
+  <div id="payments" className="scroll-mt-6">
   <Card
     title="Pagamenti"
-    subtitle="Scegli come i clienti possono pagare le prenotazioni."
+    subtitle="Gestisci Stripe Connect e scegli come i clienti possono pagare."
   >
-    <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-2">
+      <section className="grid content-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-[#1FA7A6]">
+            Stripe Connect
+          </p>
+          <h3 className="mt-1 text-lg font-black text-[#0F1D2D]">
+            {stripeStatusLabel}
+          </h3>
+        </div>
+
+        {stripeStatus?.temporarily_unavailable ? (
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-900">
+            Stripe non è verificabile in questo momento. Il pagamento in salone resta disponibile; i nuovi checkout online sono sospesi temporaneamente.
+          </p>
+        ) : stripeStatus?.reactivation_required &&
+          settings.payment_mode_default !== 'in_person' ? (
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-900">
+            {stripeReady
+              ? 'Stripe è di nuovo operativo. Puoi riattivare i pagamenti online. Nel frattempo, i clienti continuano a pagare in salone.'
+              : 'Stripe ha perso l’abilitazione. La preferenza salvata è conservata e le nuove prenotazioni passano al pagamento in salone.'}
+          </p>
+        ) : stripeReady ? (
+          <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold leading-6 text-emerald-800">
+            L’account è collegato e abilitato sia a ricevere pagamenti sia a effettuare bonifici.
+          </p>
+        ) : stripeStatus?.connected ? (
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-900">
+            Completa i passaggi richiesti da Stripe per abilitare pagamenti e bonifici. Nel frattempo resta disponibile il pagamento in salone.
+          </p>
+        ) : (
+          <p className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-6 text-slate-600">
+            Collega Stripe Connect per poter ricevere pagamenti online dai clienti.
+          </p>
+        )}
+
+        {stripeError ? (
+          <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+            {stripeError}
+          </p>
+        ) : null}
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {isOwner ? (
+            <button
+              type="button"
+              onClick={startStripeConnectOnboarding}
+              disabled={stripeWorking || stripeStatusLoading}
+              className="min-h-[48px] w-full rounded-2xl bg-[#0F1D2D] px-4 py-3 text-sm font-black text-white transition hover:bg-[#1FA7A6] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {stripeWorking
+                ? 'Apertura Stripe…'
+                : stripeStatus?.connected
+                  ? 'Gestisci configurazione Stripe'
+                  : 'Collega Stripe Connect'}
+            </button>
+          ) : (
+            <p className="flex items-center rounded-2xl bg-white px-4 py-3 text-sm font-semibold leading-5 text-slate-600">
+              Il collegamento Stripe può essere gestito solo dal titolare.
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => void loadStripeStatus()}
+            disabled={stripeStatusLoading || stripeWorking}
+            className="min-h-[48px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-[#0F1D2D] transition hover:border-[#1FA7A6] hover:text-[#1FA7A6] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {stripeStatusLoading ? 'Aggiornamento…' : 'Aggiorna stato Stripe'}
+          </button>
+        </div>
+
+        {isOwner &&
+        stripeReady &&
+        stripeStatus?.reactivation_required &&
+        settings.payment_mode_default !== 'in_person' ? (
+          <button
+            type="button"
+            onClick={() => void reactivateOnlinePayments()}
+            disabled={stripeWorking}
+            className="min-h-[48px] w-full rounded-2xl bg-[#FFC145] px-4 py-3 text-sm font-black text-[#0F1D2D] shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {stripeWorking ? 'Verifica e riattivazione…' : 'Riattiva pagamenti online'}
+          </button>
+        ) : null}
+      </section>
+
       <Field
         label="Metodo di pagamento"
-        hint="Per iniziare, consigliato: pagamento in salone."
+        hint={stripeReady
+          ? 'Puoi scegliere una modalità online perché Stripe Connect è pronto.'
+          : 'Il pagamento online si attiverà quando Stripe Connect sarà pronto. La preferenza già salvata resta invariata.'}
       >
         <select
           value={settings.payment_mode_default}
           onChange={e => {
+            const mode = e.target.value as Settings['payment_mode_default']
             setSettings(s => ({
               ...s,
-              payment_mode_default: e.target.value as Settings['payment_mode_default'],
+              payment_mode_default: mode,
             }))
+            setPaymentModeExplicitlySelected(mode !== 'in_person')
             setSavedFlag(false)
           }}
           className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base outline-none transition focus:border-[#1FA7A6] focus:ring-2 focus:ring-[#1FA7A6]/10"
         >
           <option value="in_person">Pagamento in salone</option>
-          <option value="online">Pagamento online</option>
-          <option value="client_choice">Il cliente può scegliere</option>
+          <option value="online" disabled={!stripeReady || stripeCheckUnavailable || (stripeStatus?.reactivation_required === true && !isOwner)}>
+            Pagamento online
+          </option>
+          <option value="client_choice" disabled={!stripeReady || stripeCheckUnavailable || (stripeStatus?.reactivation_required === true && !isOwner)}>
+            Il cliente può scegliere
+          </option>
         </select>
       </Field>
     </div>
   </Card>
+  </div>
 </div>
      <Card
   title="Orari settimanali"
