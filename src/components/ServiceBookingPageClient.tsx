@@ -53,6 +53,7 @@ type CheckoutData = {
   url?: string
   error?: string
   error_code?: string
+  hold_pending?: boolean
   hold_id?: string
   hold_cancel_token?: string
 }
@@ -668,6 +669,14 @@ async function submitBooking() {
     setPaymentConfigLoaded(true)
     setPaymentModeDefault('in_person')
     setPaymentModeChoice('in_person')
+    if (checkoutData.hold_pending) {
+      setSelectedTime('')
+      setReviewOpen(false)
+      setCurrentStep(2)
+      alert(msg)
+      setSubmitting(false)
+      return
+    }
     alert(`${msg}\n\nLa prenotazione non è ancora stata inviata. Controlla il pagamento in salone e conferma di nuovo.`)
     setSubmitting(false)
     return

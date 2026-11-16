@@ -1,10 +1,27 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  createWithIdempotencyRetry,
   getEffectivePaymentMode,
   isStripeConnectReady,
   shouldRequireOnlinePaymentReactivation,
 } from '../src/lib/stripeConnectPayments.ts'
+
+test('checkout ritenta con la stessa chiave idempotente se la prima risposta fallisce', async () => {
+  let attempts = 0
+  const calls: string[] = []
+
+  const result = await createWithIdempotencyRetry(async () => {
+    attempts += 1
+    calls.push('slotta-checkout-hold-test')
+    if (attempts === 1) throw new Error('risposta Stripe persa')
+    return 'cs_test_recovered'
+  })
+
+  assert.equal(result, 'cs_test_recovered')
+  assert.equal(attempts, 2)
+  assert.deepEqual(calls, ['slotta-checkout-hold-test', 'slotta-checkout-hold-test'])
+})
 
 test('Stripe è pronto solo con account collegato, addebiti e bonifici abilitati', () => {
   assert.equal(

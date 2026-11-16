@@ -24,7 +24,10 @@ import {
   hashBookingConfirmationToken,
 } from '@/lib/bookingConfirmationToken'
 import { logApiEvent, observeApiRoute } from '@/lib/apiObservability'
-import { isStripeConnectReady } from '@/lib/stripeConnectPayments'
+import {
+  createWithIdempotencyRetry,
+  isStripeConnectReady,
+} from '@/lib/stripeConnectPayments'
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY
 
@@ -452,56 +455,57 @@ try {
 
     // 10. Stripe Checkout
     // La sessione viene creata sull'account Stripe collegato del salone.
-    let session: Stripe.Response<Stripe.Checkout.Session>
-    try {
-      session = await stripe.checkout.sessions.create(
+    const checkoutParams: Stripe.Checkout.SessionCreateParams = {
+      mode: 'payment',
+      success_url: safeSuccessUrl.toString(),
+      cancel_url: safeCancelUrl.toString(),
+      customer_email: customer_email || undefined,
+      expires_at: Math.floor(expiresAt.getTime() / 1000),
+      metadata: {
+        hold_id: hold.id,
+        tenant_id,
+        service_id,
+        stripe_connect_account_id: stripeAccountId,
+      },
+      line_items: [
         {
-        mode: 'payment',
-        success_url: safeSuccessUrl.toString(),
-        cancel_url: safeCancelUrl.toString(),
-        customer_email: customer_email || undefined,
-
-        // Stripe richiede expires_at in secondi Unix.
-        expires_at: Math.floor(expiresAt.getTime() / 1000),
-
-        metadata: {
-          hold_id: hold.id,
-          tenant_id,
-          service_id,
-          stripe_connect_account_id: stripeAccountId,
-        },
-
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: 'eur',
-              unit_amount: priceCents,
-              product_data: {
-                name: svc.name || 'Servizio',
-              },
+          quantity: 1,
+          price_data: {
+            currency: 'eur',
+            unit_amount: priceCents,
+            product_data: {
+              name: svc.name || 'Servizio',
             },
           },
-        ],
         },
-        {
-          stripeAccount: stripeAccountId,
-          idempotencyKey: `slotta-checkout-hold-${hold.id}`,
-        },
+      ],
+    }
+    const checkoutOptions = {
+      stripeAccount: stripeAccountId,
+      idempotencyKey: `slotta-checkout-hold-${hold.id}`,
+    }
+
+    let session: Stripe.Response<Stripe.Checkout.Session>
+    try {
+      session = await createWithIdempotencyRetry(
+        () => stripe.checkout.sessions.create(checkoutParams, checkoutOptions),
       )
     } catch {
-      // A checkout failure is not by itself proof that Connect was disabled.
-      // Re-read the account and persist a suspension only after a valid false status.
+      // A failed response can be ambiguous: the session may exist even if its
+      // response was lost. The idempotent retry above recovers it when possible.
+      // If both attempts fail, keep the hold until its expiry to avoid allowing
+      // an in-person booking while a Stripe session might still be payable.
+      let stripeReadyAfterFailure: boolean | null = null
       try {
         const recoveryObservedAt = new Date().toISOString()
         const currentAccount = await stripe.accounts.retrieve(stripeAccountId)
-        const currentReady = isStripeConnectReady({
+        const accountReady = isStripeConnectReady({
           connected: true,
           chargesEnabled: currentAccount.charges_enabled ?? false,
           payoutsEnabled: currentAccount.payouts_enabled ?? false,
         })
 
-        const { error: statusSyncError } = await db.rpc(
+        const { data: syncedStripeReady, error: statusSyncError } = await db.rpc(
           'sync_stripe_connect_account_status',
           {
             p_stripe_account_id: currentAccount.id,
@@ -514,41 +518,32 @@ try {
           },
         )
         if (statusSyncError) throw statusSyncError
-
-        await db
-          .from('service_booking_holds')
-          .update({ status: 'cancelled' })
-          .eq('id', hold.id)
-          .eq('tenant_id', tenant_id)
-          .eq('status', 'pending')
-
-        return NextResponse.json(
-          {
-            error: currentReady
-              ? 'Stripe non è riuscito ad avviare il checkout. Puoi scegliere il pagamento in salone e riprovare più tardi.'
-              : 'Stripe non è più abilitato a ricevere pagamenti. Scegli il pagamento in salone.',
-            error_code: currentReady
-              ? 'STRIPE_CHECKOUT_UNAVAILABLE'
-              : 'ONLINE_PAYMENTS_SUSPENDED',
-          },
-          { status: currentReady ? 503 : 409 },
-        )
+        stripeReadyAfterFailure = accountReady && syncedStripeReady === true
       } catch {
-        await db
-          .from('service_booking_holds')
-          .update({ status: 'cancelled' })
-          .eq('id', hold.id)
-          .eq('tenant_id', tenant_id)
-          .eq('status', 'pending')
+        stripeReadyAfterFailure = null
+      }
 
+      if (stripeReadyAfterFailure === false) {
         return NextResponse.json(
           {
-            error: 'Stripe non è raggiungibile in questo momento. Puoi scegliere il pagamento in salone e riprovare più tardi.',
-            error_code: 'STRIPE_STATUS_UNAVAILABLE',
+            error: 'Stripe non è più abilitato a ricevere pagamenti. Questo tentativo resta in verifica fino alla scadenza; scegli un altro orario per pagare in salone.',
+            error_code: 'ONLINE_PAYMENTS_SUSPENDED',
+            hold_pending: true,
           },
-          { status: 503 },
+          { status: 409 },
         )
       }
+
+      return NextResponse.json(
+        {
+          error: 'Non è stato possibile verificare l’esito del checkout. Per evitare un doppio pagamento, l’orario resta temporaneamente riservato. Riprova più tardi o scegli un altro orario per pagare in salone.',
+          error_code: stripeReadyAfterFailure === true
+            ? 'STRIPE_CHECKOUT_UNAVAILABLE'
+            : 'STRIPE_STATUS_UNAVAILABLE',
+          hold_pending: true,
+        },
+        { status: 503 },
+      )
     }
 
     const { error: updateHoldErr } = await getSupabaseAdmin()
