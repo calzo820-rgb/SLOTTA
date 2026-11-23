@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getMyMembership, requireAuth } from '@/lib/authz'
+import { isManagerSetupPending } from '@/lib/managerOnboardingServer'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -9,6 +10,7 @@ export default async function AdminPage() {
   const mem = requireAuth(mem0, '/admin')
 
   if (mem.role === 'owner') {
+    if (await isManagerSetupPending(mem.tenant_id)) redirect('/admin/setup')
     redirect('/admin/service-bookings')
   }
 

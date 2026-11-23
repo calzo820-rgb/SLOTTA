@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import AdminTopBar from './admin-topbar'
 import { getMyMembership, requireAuth } from '@/lib/authz'
+import { isManagerSetupPending } from '@/lib/managerOnboardingServer'
+import SetupReturnBanner from './setup/SetupReturnBanner'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -19,6 +21,9 @@ export default async function AdminLayout({
   }
 
   requireAuth(mem, '/admin')
+  const setupPending = mem.role === 'owner'
+    ? await isManagerSetupPending(mem.tenant_id)
+    : false
 
   return (
     <>
@@ -27,6 +32,7 @@ export default async function AdminLayout({
         role={mem.role}
         allowedPages={mem.allowed_pages}
       />
+      <SetupReturnBanner visible={setupPending} />
       <div>{children}</div>
     </>
   )

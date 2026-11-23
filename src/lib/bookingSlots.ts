@@ -236,12 +236,24 @@ export function buildSlots(params: {
   intervals: Array<{ start: number; end: number }>
   staffCount: number
   leadMinutes: number
+  currentDate?: string
+  currentMinutes?: number
 }) {
-  const { date, segments, slotMinutes, selectedDuration, intervals, staffCount, leadMinutes } = params
+  const {
+    date,
+    segments,
+    slotMinutes,
+    selectedDuration,
+    intervals,
+    staffCount,
+    leadMinutes,
+    currentDate,
+    currentMinutes,
+  } = params
 
   const slotsTmp: Slot[] = []
-  const isToday = isSameLocalDay(date)
-  const nowMinutes = getLocalNowMinutes()
+  const isToday = currentDate ? date === currentDate : isSameLocalDay(date)
+  const nowMinutes = currentMinutes ?? getLocalNowMinutes()
 
   for (const seg of segments) {
     for (let t = seg.start; t + slotMinutes <= seg.end; t += slotMinutes) {

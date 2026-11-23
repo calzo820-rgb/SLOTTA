@@ -12,6 +12,12 @@ type SettingsCard = {
 
 const settingsCards: SettingsCard[] = [
   {
+    title: 'Guida configurazione iniziale',
+    description: 'Rivedi i passaggi e controlla la disponibilità della pagina pubblica.',
+    href: '/admin/setup',
+    icon: '✅',
+  },
+  {
     title: 'Abbonamento Slotta',
     description: 'Piano mensile, metodo di pagamento, fatture e rinnovo.',
     href: '/admin/billing',
