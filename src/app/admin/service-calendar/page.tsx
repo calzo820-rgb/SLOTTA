@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getMyMembership, requirePageAccess } from '@/lib/authz'
 import ServiceCalendarClient from './ServiceCalendarClient'
+import { requireManagerSetupOrRedirect } from '@/lib/managerOnboardingServer'
 
 export default async function Page() {
   const mem = await getMyMembership()
@@ -10,6 +11,7 @@ export default async function Page() {
   }
 
   requirePageAccess(mem, 'calendar')
+  await requireManagerSetupOrRedirect(mem, '/admin/service-calendar')
 
   return <ServiceCalendarClient tenantId={mem.tenant_id} />
 }
