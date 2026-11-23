@@ -17,10 +17,12 @@ export default function AdminTopBar({
   tenantId,
   role,
   allowedPages,
+  setupPending,
 }: {
   tenantId: string
   role: AdminRole
   allowedPages: string[] | null
+  setupPending: boolean
 }) {
   const pathname = usePathname()
   const [pendingCount, setPendingCount] = useState(0)
@@ -96,6 +98,7 @@ const loadPendingCount = useCallback(async () => {
      {/* MOBILE */}
 <div className="md:hidden relative flex items-center justify-between gap-3">
   {/* HAMBURGER SINISTRA */}
+  {!setupPending && (
   <button
     type="button"
     onClick={() => setMenuOpen(!menuOpen)}
@@ -113,6 +116,7 @@ const loadPendingCount = useCallback(async () => {
       </span>
     )}
   </button>
+  )}
 
   {/* TITOLO PAGINA CENTRALE */}
 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -130,7 +134,7 @@ const loadPendingCount = useCallback(async () => {
   </div>
 </div>
 
-      {menuOpen && (
+      {!setupPending && menuOpen && (
         <>
           <div
             className="fixed inset-0 z-40 bg-[#0F1D2D]/30 md:hidden"
@@ -213,6 +217,7 @@ const loadPendingCount = useCallback(async () => {
         </div>
 
         <div className="flex min-w-0 items-center gap-3">
+          {!setupPending && (
           <nav className="flex min-w-0 flex-wrap items-center justify-end gap-2">
             {tabs.map(tab => {
               const active = isActive(pathname, tab.href)
@@ -247,6 +252,7 @@ const loadPendingCount = useCallback(async () => {
               )
             })}
           </nav>
+          )}
 
           <UserMenu />
         </div>

@@ -31,6 +31,7 @@ export default async function AdminLayout({
         tenantId={mem.tenant_id}
         role={mem.role}
         allowedPages={mem.allowed_pages}
+        setupPending={setupPending}
       />
       <SetupReturnBanner visible={setupPending} />
       <div>{children}</div>
